@@ -2,7 +2,11 @@
 
 export async function getJSON(url) {
   const res = await fetch(url);
-  if (!res.ok) throw new Error(`${res.status} ${url}`);
+  if (!res.ok) {
+    const error = new Error(`${res.status} ${url}`);
+    error.status = res.status;
+    throw error;
+  }
   return res.json();
 }
 
@@ -38,16 +42,18 @@ export function fmtMoney(v) {
 export function fmtAgo(epochSeconds) {
   if (!epochSeconds) return "";
   const diff = Date.now() / 1000 - epochSeconds;
-  if (diff < 90) return "just now";
-  if (diff < 3600) return `${Math.round(diff / 60)}m ago`;
-  if (diff < 86400) return `${Math.round(diff / 3600)}h ago`;
-  return `${Math.round(diff / 86400)}d ago`;
+  if (diff < 90) return "刚刚";
+  if (diff < 3600) return `${Math.round(diff / 60)}分钟前`;
+  if (diff < 86400) return `${Math.round(diff / 3600)}小时前`;
+  return `${Math.round(diff / 86400)}天前`;
 }
 
 export function fmtClock(iso) {
   if (!iso) return "";
   try {
-    return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    const date = new Date(iso);
+    if (!Number.isFinite(date.getTime())) return "";
+    return date.toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
   } catch {
     return "";
   }

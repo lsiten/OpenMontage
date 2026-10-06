@@ -3,8 +3,6 @@
    Dark-room editorial: near-black matte canvas, artifacts glow.
    ============================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Courier+Prime:ital,wght@0,400;0,700;1,400&display=swap');
-
 :root {
   --bg: #0a0a0c;
   --surface: #101013;
@@ -37,9 +35,9 @@
   --media-bg: #000;
   --textcard-bg: #0d0d10;
   --badge-bg: rgba(8,8,10,.72);
-  --sans: 'Inter', -apple-system, sans-serif;
-  --mono: 'JetBrains Mono', ui-monospace, monospace;
-  --screenplay: 'Courier Prime', 'Courier New', monospace;
+  --sans: 'Inter', -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, 'PingFang SC', 'Microsoft YaHei', monospace;
+  --screenplay: 'Courier Prime', 'Courier New', 'Songti SC', 'SimSun', serif;
 
   /* Global type scale. Every font-size is calc(<px> * var(--fs-scale)), so this
      one number scales all text proportionally for readability. 1 = original. */
@@ -1039,4 +1037,34 @@ body:not(.first) .approval-review { animation: none; }
   .approval-review-foot { align-items: flex-start; flex-direction: column; }
   .approval-review-foot button { width: 100%; }
   .approval-status { white-space: normal; }
+}
+
+html[lang="zh-CN"] body { line-height: 1.65; }
+html[lang="zh-CN"] .slate h1,
+html[lang="zh-CN"] .lib-body h3 { text-transform: none; overflow-wrap: anywhere; }
+html[lang="zh-CN"] .stage .name,
+html[lang="zh-CN"] .live,
+html[lang="zh-CN"] .approval-eyebrow,
+html[lang="zh-CN"] .section-title { letter-spacing: .04em; }
+html[lang="zh-CN"] .stage .sub { line-height: 1.6; }
+html[lang="zh-CN"] .notice { flex-wrap: wrap; overflow-wrap: anywhere; }
+html[lang="zh-CN"] .notice > div { min-width: 0; flex: 1 1 240px; }
+html[lang="zh-CN"] button { min-height: 32px; padding: 5px 12px; font-family: var(--sans); white-space: normal; }
+html[lang="zh-CN"] .sp-action,
+html[lang="zh-CN"] .sp-paren { line-height: 1.8; overflow-wrap: anywhere; }
+html[lang="zh-CN"] .approval-item-title,
+html[lang="zh-CN"] .approval-lead,
+html[lang="zh-CN"] .d-pick,
+html[lang="zh-CN"] .d-why,
+html[lang="zh-CN"] .render-meta { overflow-wrap: anywhere; }
+html[lang="zh-CN"] .replay-bar { flex-wrap: wrap; gap: 10px; }
+html[lang="zh-CN"] .replay-bar input { min-width: 80px; }
+html[lang="zh-CN"] .notice pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+html[lang="zh-CN"] #loadStatus button { margin-left: 12px; }
+@media (max-width: 520px) {
+  html[lang="zh-CN"] .chip { white-space: normal; overflow-wrap: anywhere; }
+  html[lang="zh-CN"] .script-card .sp-title { padding-right: 96px; }
+  html[lang="zh-CN"] .modal-page { padding: 12px; max-width: 100%; }
+  html[lang="zh-CN"] .render-meta { flex-wrap: wrap; }
+  html[lang="zh-CN"] .rp-time { white-space: normal; }
 }
