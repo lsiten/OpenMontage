@@ -1,0 +1,66 @@
+{
+  "contract": "resolve_blueprint",
+  "baseline": {
+    "repository": "https://github.com/lsiten/OpenMontage.git",
+    "head": "d2ffc7309e2443aeccdfca91a8bc54dd75256db3",
+    "execution_mode": "worktree",
+    "source_cutoff": "2026-10-19",
+    "cwd": "/Users/leishicheng/Documents/workspace/code/OpenMontage"
+  },
+  "commands": [
+    {
+      "command": ".venv/bin/python -m pytest -q tests/contracts/test_resolve_blueprint_contract.py",
+      "exit_code": 0,
+      "output": "................                                                         [100%]\\n16 passed in 0.11s"
+    },
+    {
+      "command": ".venv/bin/python - <<'PY' ... Draft202012Validator.check_schema ... PY",
+      "exit_code": 0,
+      "output": "schema_check=ok"
+    },
+    {
+      "command": ".venv/bin/python -m lib.resolve_blueprint tests/fixtures/resolve_blueprint/valid.json",
+      "exit_code": 0,
+      "output": "valid=true; resolve_connection=false; timeline_fps=30000/1001; frame_origin=100"
+    },
+    {
+      "command": ".venv/bin/python -m pytest -q tests/contracts/test_resolve_blueprint_contract.py -k 'approved_root_ancestors or source_hash'",
+      "exit_code": 0,
+      "output": "...                                                                      [100%]\\n3 passed, 13 deselected in 0.03s"
+    },
+    {
+      "command": ".venv/bin/python --version; node --version; ffmpeg -version | head -1; ffprobe -version | head -1",
+      "exit_code": 0,
+      "output": "Python 3.10.18\\nv22.19.0\\nffmpeg version 8.1.2\\nffprobe version 8.1.2"
+    },
+    {
+      "command": "git diff --check",
+      "exit_code": 0,
+      "output": ""
+    }
+  ],
+  "coverage": {
+    "schema_closed_unknown_fields": true,
+    "independent_rational_fps": true,
+    "half_open_to_resolve_inclusive_conversion": true,
+    "explicit_frame_origin": true,
+    "approved_roots_and_symlink_rejection": true,
+    "approved_root_ancestor_symlink_rejection": true,
+    "full_file_sha256_change_rejection": true,
+    "source_hash_bound_to_media_asset": true,
+    "unused_input_source_hash_removed": true,
+    "idempotency_key": true,
+    "partial_failure_stops": true,
+    "unsupported_operations_rejected": true,
+    "direct_positive_fixture_cli": true,
+    "resolve_connected": false,
+    "paid_services_called": false,
+    "private_material_uploaded": false
+  },
+  "known_limits": [
+    "No Resolve connection, write, save, render, or readback was performed.",
+    "No Artlist login, download, or license decision was performed.",
+    "The rights sidecar digest is gated but sidecar content is not fetched by the offline validator.",
+    "The checked-in positive fixture uses the authorized local repository path for direct CLI reproducibility on this worktree."
+  ]
+}

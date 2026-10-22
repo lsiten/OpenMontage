@@ -1,0 +1,54 @@
+{
+  "manifest_version": "1.0",
+  "contract": "resolve_blueprint",
+  "production_baseline": {
+    "repository": "https://github.com/lsiten/OpenMontage.git",
+    "head": "d2ffc7309e2443aeccdfca91a8bc54dd75256db3",
+    "execution_mode": "worktree",
+    "source_cutoff": "2026-10-19"
+  },
+  "artifacts": [
+    {
+      "path": "schemas/artifacts/resolve_blueprint.schema.json",
+      "kind": "closed_json_schema",
+      "bytes": 8322,
+      "sha256": "70411acde6e777552147db82f11844e2825a18ea316679c9cf67077b893ca8f1"
+    },
+    {
+      "path": "lib/resolve_blueprint.py",
+      "kind": "offline_validator_and_converter",
+      "bytes": 9825,
+      "sha256": "881e199c24c9b4fcd44313c3087dc1c592733ca450ff02063b74cbce30f33597"
+    },
+    {
+      "path": "tests/contracts/test_resolve_blueprint_contract.py",
+      "kind": "local_negative_and_positive_tests",
+      "bytes": 6894,
+      "sha256": "45b40e9621d2c32ebfff2dbda15f3eb51b06925e1209b1554025844fd7969299"
+    },
+    {
+      "path": "tests/fixtures/resolve_blueprint/valid.json",
+      "kind": "self_contained_positive_fixture",
+      "bytes": 1888,
+      "sha256": "07f985b71a03d25affc64552b4a37736370e70dc96f9953e0834ab855d8ba73f"
+    },
+    {
+      "path": "tests/fixtures/resolve_blueprint/media/clip.bin",
+      "kind": "self_authored_fixture_media",
+      "bytes": 28,
+      "sha256": "a6b0c228182b1fa1a645902ca0b2a94beb876af1e6f17f53df8e6b68ba91dfdb"
+    },
+    {
+      "path": "docs/contracts/resolve-blueprint-validation-log.json",
+      "kind": "reproducible_validation_evidence",
+      "bytes": 2733,
+      "sha256": "1bc2ab3a6dabe0c83d16600f88572959ca7e3700abaf07025a0d8f8d3722383b"
+    }
+  ],
+  "delivery": {
+    "canonical_artifacts_preserved": true,
+    "sidecar_boundary_preserved": true,
+    "real_resolve_result_claimed": false,
+    "next_receiver": "OpenMontage-独立质检"
+  }
+}

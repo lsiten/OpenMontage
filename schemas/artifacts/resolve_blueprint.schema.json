@@ -1,0 +1,285 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "openmontage/artifacts/resolve_blueprint",
+  "title": "OpenMontage Resolve Offline Blueprint",
+  "description": "Closed offline contract for a new-project Resolve transport plan. It does not claim that Resolve was connected, written, rendered, or read back.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "mode",
+    "inputs",
+    "project",
+    "timeline",
+    "tracks",
+    "clips",
+    "audio",
+    "captions",
+    "authorized_operations",
+    "unsupported_operations",
+    "approval_refs"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "mode": { "const": "offline_blueprint" },
+    "inputs": { "$ref": "#/$defs/inputs" },
+    "project": { "$ref": "#/$defs/project" },
+    "timeline": { "$ref": "#/$defs/timeline" },
+    "tracks": { "$ref": "#/$defs/tracks" },
+    "clips": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/clip" }
+    },
+    "audio": { "$ref": "#/$defs/audio" },
+    "captions": { "$ref": "#/$defs/captions" },
+    "authorized_operations": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "create_new_project",
+          "create_new_timeline",
+          "set_timeline_format",
+          "add_video_clip",
+          "add_audio_clip",
+          "save_new_project"
+        ]
+      },
+      "uniqueItems": true,
+      "minItems": 1
+    },
+    "unsupported_operations": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "connect_existing_project",
+          "overwrite_existing_project",
+          "vfr_retime",
+          "speed_change",
+          "still_image_duration",
+          "transitions",
+          "audio_ducking",
+          "captions",
+          "lut",
+          "remote_media",
+          "music_without_rights"
+        ]
+      },
+      "uniqueItems": true
+    },
+    "approval_refs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true,
+      "minItems": 1
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-fA-F]{64}$"
+    },
+    "absolutePath": {
+      "type": "string",
+      "pattern": "^/[^\\u0000]*$",
+      "minLength": 2
+    },
+    "positiveInteger": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "nonNegativeInteger": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "fps": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["numerator", "denominator"],
+      "properties": {
+        "numerator": { "$ref": "#/$defs/positiveInteger" },
+        "denominator": { "$ref": "#/$defs/positiveInteger" }
+      }
+    },
+    "inputs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifact_sha256",
+        "source_probe",
+        "baseline",
+        "approved_media_roots"
+      ],
+      "properties": {
+        "artifact_sha256": { "$ref": "#/$defs/sha256" },
+        "source_probe": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["media_type", "is_vfr"],
+          "properties": {
+            "media_type": { "enum": ["video", "audio", "image"] },
+            "is_vfr": { "const": false },
+            "duration_seconds": { "type": "number", "exclusiveMinimum": 0 }
+          }
+        },
+        "baseline": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["repository", "head"],
+          "properties": {
+            "repository": { "type": "string", "minLength": 1 },
+            "head": { "type": "string", "pattern": "^[0-9a-fA-F]{40}$" }
+          }
+        },
+        "approved_media_roots": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/absolutePath" },
+          "uniqueItems": true,
+          "minItems": 1
+        }
+      }
+    },
+    "project": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "new_project_name",
+        "fps_numerator",
+        "fps_denominator",
+        "width",
+        "height"
+      ],
+      "properties": {
+        "new_project_name": { "type": "string", "minLength": 1 },
+        "fps_numerator": { "$ref": "#/$defs/positiveInteger" },
+        "fps_denominator": { "$ref": "#/$defs/positiveInteger" },
+        "width": { "$ref": "#/$defs/positiveInteger" },
+        "height": { "$ref": "#/$defs/positiveInteger" }
+      }
+    },
+    "timeline": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["new_timeline_name", "start_frame", "end_exclusive_frame", "frame_origin"],
+      "properties": {
+        "new_timeline_name": { "type": "string", "minLength": 1 },
+        "start_frame": { "$ref": "#/$defs/nonNegativeInteger" },
+        "end_exclusive_frame": { "$ref": "#/$defs/positiveInteger" },
+        "frame_origin": { "const": "explicit_start_frame" }
+      }
+    },
+    "tracks": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["video", "audio"],
+      "properties": {
+        "video": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^V[1-9][0-9]*$" },
+          "uniqueItems": true
+        },
+        "audio": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^A[1-9][0-9]*$" },
+          "uniqueItems": true
+        }
+      }
+    },
+    "clip": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "asset_id",
+        "source_path",
+        "source_sha256",
+        "source_fps",
+        "source_in_frame",
+        "source_end_exclusive_frame",
+        "record_in_frame",
+        "record_end_exclusive_frame",
+        "track_role",
+        "speed",
+        "audio_policy"
+      ],
+      "properties": {
+        "asset_id": { "type": "string", "minLength": 1 },
+        "source_path": { "$ref": "#/$defs/absolutePath" },
+        "source_sha256": { "$ref": "#/$defs/sha256" },
+        "source_fps": { "$ref": "#/$defs/fps" },
+        "source_in_frame": { "$ref": "#/$defs/nonNegativeInteger" },
+        "source_end_exclusive_frame": { "$ref": "#/$defs/positiveInteger" },
+        "record_in_frame": { "$ref": "#/$defs/nonNegativeInteger" },
+        "record_end_exclusive_frame": { "$ref": "#/$defs/positiveInteger" },
+        "track_role": { "enum": ["video", "audio"] },
+        "speed": { "const": 1 },
+        "audio_policy": { "enum": ["preserve", "mute", "none"] }
+      }
+    },
+    "audioAsset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "asset_id",
+        "source_path",
+        "source_sha256",
+        "record_in_frame",
+        "record_end_exclusive_frame",
+        "track_role"
+      ],
+      "properties": {
+        "asset_id": { "type": "string", "minLength": 1 },
+        "source_path": { "$ref": "#/$defs/absolutePath" },
+        "source_sha256": { "$ref": "#/$defs/sha256" },
+        "record_in_frame": { "$ref": "#/$defs/nonNegativeInteger" },
+        "record_end_exclusive_frame": { "$ref": "#/$defs/positiveInteger" },
+        "track_role": { "const": "audio" }
+      }
+    },
+    "audio": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["narration", "music", "sfx"],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "music": { "minItems": 1 }
+            }
+          },
+          "then": {
+            "required": ["music_rights_ref", "music_rights_sha256"]
+          }
+        }
+      ],
+      "properties": {
+        "narration": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/audioAsset" }
+        },
+        "music": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/audioAsset" }
+        },
+        "sfx": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/audioAsset" }
+        },
+        "music_rights_ref": { "type": "string", "minLength": 1 },
+        "music_rights_sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "captions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["enabled", "items"],
+      "properties": {
+        "enabled": { "const": false },
+        "items": { "type": "array", "maxItems": 0 }
+      }
+    }
+  }
+}

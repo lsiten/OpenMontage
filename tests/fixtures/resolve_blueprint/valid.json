@@ -1,0 +1,70 @@
+{
+  "schema_version": "1.0",
+  "mode": "offline_blueprint",
+  "inputs": {
+    "artifact_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "source_probe": {
+      "media_type": "video",
+      "is_vfr": false,
+      "duration_seconds": 2.0
+    },
+    "baseline": {
+      "repository": "https://github.com/lsiten/OpenMontage.git",
+      "head": "d2ffc7309e2443aeccdfca91a8bc54dd75256db3"
+    },
+    "approved_media_roots": ["/Users/leishicheng/Documents/workspace/code/OpenMontage/tests/fixtures/resolve_blueprint/media"]
+  },
+  "project": {
+    "new_project_name": "offline-smoke",
+    "fps_numerator": 30000,
+    "fps_denominator": 1001,
+    "width": 1920,
+    "height": 1080
+  },
+  "timeline": {
+    "new_timeline_name": "offline-smoke-timeline",
+    "start_frame": 100,
+    "end_exclusive_frame": 160,
+    "frame_origin": "explicit_start_frame"
+  },
+  "tracks": {
+    "video": ["V1"],
+    "audio": ["A1"]
+  },
+  "clips": [
+    {
+      "asset_id": "clip-001",
+      "source_path": "/Users/leishicheng/Documents/workspace/code/OpenMontage/tests/fixtures/resolve_blueprint/media/clip.bin",
+      "source_sha256": "a6b0c228182b1fa1a645902ca0b2a94beb876af1e6f17f53df8e6b68ba91dfdb",
+      "source_fps": {
+        "numerator": 24,
+        "denominator": 1
+      },
+      "source_in_frame": 0,
+      "source_end_exclusive_frame": 48,
+      "record_in_frame": 100,
+      "record_end_exclusive_frame": 160,
+      "track_role": "video",
+      "speed": 1,
+      "audio_policy": "preserve"
+    }
+  ],
+  "audio": {
+    "narration": [],
+    "music": [],
+    "sfx": []
+  },
+  "captions": {
+    "enabled": false,
+    "items": []
+  },
+  "authorized_operations": [
+    "create_new_project",
+    "create_new_timeline",
+    "set_timeline_format",
+    "add_video_clip",
+    "save_new_project"
+  ],
+  "unsupported_operations": [],
+  "approval_refs": ["offline-test-approval"]
+}
