@@ -1,0 +1,17 @@
+{
+  "id": "edit-spec.example.0001",
+  "intent": "示例（非真实生成）：一个零付费、本地可复现的最小编辑规格占位",
+  "inputs": [
+    { "path": "self-authored/placeholder.mp4", "kind": "video", "license": "self-authored" }
+  ],
+  "operations": [ { "op": "trim" }, { "op": "add-subtitle" } ],
+  "constraints": { "duration_s": 60, "resolution": "1080x1920", "fps": 30 },
+  "expected": { "format": "mp4", "duration_s": 60, "reproducible": true },
+  "cost_gate": { "allow_paid_service": false, "max_cost": 0 },
+  "provenance": {
+    "note": "占位示例，不代表真实 AI 服务已接入或生成质量已验收",
+    "source": "placeholder",
+    "tool": "none",
+    "verified_cost": 0
+  }
+}
