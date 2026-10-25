@@ -1,0 +1,22 @@
+{
+  "kind": "review",
+  "issue_revision": 10,
+  "summary": "工程集成已交付 Phase 2（伞仓库 tool/+method/+contract/，remotion-composer 并存）+ Phase 3（整库 AGPLv3，保留 OpenReel 第三方署名），逐阶段提交可回滚 checkpoint 于绑定 worktree 分支 agent/issue-tree/lsit-282 @ 4bc7b97a。待独立质检（非作者）复验后交制片统筹整体验收。",
+  "actor_type": "agent",
+  "actor_id": "d9095bea-c787-4560-b6c2-c6d3c6b2389e",
+  "missing": [
+    "独立质检（OpenMontage-独立质检，d9095bea-c787-4560-b6c2-c6d3c6b2389e，非作者）需在绑定 worktree 装依赖后复验 tsc/tsup/vitest 实际 exit 0（含 command-llm.test.ts）",
+    "复验 5 apps + 10 packages 完整、remotion-composer 并存、AGPLv3 头到位、.bak 与 test-lsit273/ 未入库",
+    "确认 contract/edit-spec 骨架是否需定稿、逐源文件头是否需改写（本 checkpoint 未改写 8597+ 源文件内嵌头）",
+    "复验结论（通过/退回/阻断，附版本/命令/证据/未覆盖项/下一接收人）交制片统筹整体验收"
+  ],
+  "evidence": [
+    "分支 agent/issue-tree/lsit-282 @ 4bc7b97a；4 checkpoints: 1186b27f(Phase2a)/dfd8f9fc(Phase2b)/8374c574(Phase2c)/4bc7b97a(Phase3)",
+    "Phase2a tool/=OpenReel 8597 文件(git archive 84e74cf, node_modules/.git 排除; 15 个 .gitignore 命中但已跟踪文件已 git add -f 补回避免误删)",
+    "Phase2b method/ 2082 文件(git mv 全 rename 无删除); remotion-composer 42 并存顶层; 5 apps+10 packages 全在 tool/",
+    "Phase3 AGPLv3: tool/LICENSE sha256 1a152608... 含 Augustus Otu 署名; 根 LICENSE 6083769c...; 全树内容哈希 3b622fc4...; 整库 tracked=10728",
+    "工作树干净(仅本 run context 文件 .multica/lsit282-desc.md/next-step.json/nextstep.json 未跟踪未提交)",
+    "Phase 1 checkpoint openreel-lsit277 仍 wip282-replay@84e74cf 未动(只读)",
+    "构建 tsc/tsup/vitest 未运行: 按制片统筹指令由独立质检装依赖复验, 非作者自检; 无付费/无凭据/无联网"
+  ]
+}

@@ -1,17 +1,17 @@
 {
-  "kind": "review",
-  "summary": "报告方=工程集成 d5dd01ea（reporting agent）。LSIT-288 工程集成交付完成，状态 in_review：pm/ 包（独立 PM 应用 + pm/chat 对话式驱动）按已验收契约 LSIT-285 实现，本地零付费 smoke test 全过，backlot 只读契约未破坏，真实 AI/付费服务未接入未冒充。下一接收人：① 独立质检 d9095bea 非作者复核（勿以作者自检当通过）；② 通过后制片统筹 0640b2f5 整体验收。父任务 LSIT-284 保持未完成，本任务不自行关闭。",
+  "kind": "continue",
+  "summary": "工程集成 d5dd01ea 已重派（issue rerun → 运行 01a17175，kind=direct，running，05:07:49 起）续做 Phase 2 伞仓库合并 + Phase 3 整库 AGPLv3。Phase 1 WIP 重放已完成并核实（wip282-replay@84e74cf）。第二次工程运行 01a1715a 已 completed（04:38→04:57）并交接（非取消）。下一步：工程集成 d5dd01ea 交付 Phase 2/3 → 独立质检（非作者 d9095bea）装依赖复验 tsc/tsup/vitest → 制片统筹（我 0640b2f5）整体验收。议题 in_progress，父任务不关闭。",
   "actor_type": "agent",
-  "actor_id": "d5dd01ea-2fbf-412c-8c8e-50fa95303ebd",
+  "actor_id": "0640b2f5-0997-424c-8075-b97508a13e36",
   "missing": [],
   "evidence": [
-    "pytest tests/pm/ -> 43 passed (EXIT 0)",
-    "pytest tests/contracts/test_pm_contract.py -> 5 passed (EXIT 0): 13 管线、provider 菜单 local|paid 分类、零付费边界、离线替身标注、backlot 共存(write_pm_segment 只改 pm 键)",
-    "pytest tests/contracts/test_backlot_contract.py -> 15 passed (EXIT 0): backlot 只读契约未破坏",
-    "pytest tests/backlot/ -> 45 passed, 1 skipped (EXIT 0)",
-    "registry.provider_menu() -> 24 能力 / 117 工具 (EXIT 0); estimate_cost(...).total_paid_usd == 0.0",
-    "git diff --stat (tracked) 为空: 仅 untracked 的 pm/、tests/pm/、tests/contracts/test_pm_contract.py 新增；聚合 sha256 5c6bd34b7b2b1eb52a7d888a0d427c91d1ff53158dea5e19a27757e91008def2；基线 main@f10953d0 / HEAD b4c84eae",
-    "未覆盖/既有缺口(非本任务引入,建议队长派发): OM venv 缺 socksio 致 test_phase3_contracts.py 3 项失败; scripts/backlot_simulate_run.py 既有 checkpoint 顺序缺陷; render_demo.py 全量渲染需 npm install"
+    "issue rerun 成功：新运行 01a17175（d5dd01ea，kind=direct）status=running（05:07:49 起，--active 实测）— 正在续做 Phase 2/3",
+    "议题 in_progress（rev 8），assignee=d5dd01ea；在途仅 01a17150（我）+ 01a17175（工程），无冲突（--active 实测）",
+    "第二次工程运行 01a1715a（d5dd01ea）：04:38→04:57 completed，非取消；04:53 交接 01a17167（第 1 步已完成、第 2/3 未做）",
+    "首次工程运行 01a1713e：04:08→04:27 cancelled（task cancelled by server），已修订描述修因（逐阶段可回滚 checkpoint + 从 Phase 1 续做 + 排除 node_modules/.git），本次新派读取修订描述",
+    "Phase 1 checkpoint：openreel-lsit277 分支 wip282-replay@84e74cf，真实解 cli.ts 冲突，4 项入库，.bak 与 test-lsit273/ 已排除（工程交接实测）",
+    "无真实权限/凭据/资源/决策缺口：AGPLv3 整库已裁定接受，第三方署名按标准做法保留（非新决策），不向成员求助",
+    "测试（tsc/tsup/vitest）与整体验收不采信作者自检，待 Phase 2/3 交付后由独立质检（非作者 d9095bea）复验，再交制片统筹（0640b2f5）整体验收"
   ],
   "issue_revision": 8
 }

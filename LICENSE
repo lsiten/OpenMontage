@@ -1,3 +1,20 @@
+OpenMontage (umbrella)
+Copyright (c) 2026 OpenMontage and Contributors
+
+This repository is licensed under the GNU Affero General Public License v3.0
+("AGPLv3"). AGPLv3 §13 grants additional SaaS/network-use copyleft
+obligations (known and accepted). This is a license/attribution transition,
+not a capability change.
+
+Umbrella layout (2026-10-25 monorepo merge):
+  tool/            OpenReel — Copyright (c) 2024-2026 Augustus Otu and
+                   Contributors; formerly MIT, now AGPLv3 (attribution
+                   preserved, see tool/LICENSE).
+  method/         OpenMontage (AGPLv3, see method/LICENSE).
+  contract/       inter-layer contract definitions (AGPLv3).
+  remotion-composer/  animation-explainer niche (AGPLv3, coexists at top).
+
+----- begin GNU Affero General Public License v3.0 -----
                     GNU AFFERO GENERAL PUBLIC LICENSE
                        Version 3, 19 November 2007
 
