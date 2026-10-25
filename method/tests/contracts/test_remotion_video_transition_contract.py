@@ -1,11 +1,11 @@
-from pathlib import Path
+from lib.paths import remotion_composer_dir
 
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+COMPOSER = remotion_composer_dir()
 
 
 def test_video_scene_honors_hard_cut_tokens_and_backing_color() -> None:
-    source = (REPO_ROOT / "remotion-composer/src/Explainer.tsx").read_text(
+    source = (COMPOSER / "src/Explainer.tsx").read_text(
         encoding="utf-8"
     )
 
@@ -20,7 +20,7 @@ def test_video_scene_honors_hard_cut_tokens_and_backing_color() -> None:
 
 
 def test_cinematic_fades_are_bounded_by_each_scene_duration() -> None:
-    source = (REPO_ROOT / "remotion-composer/src/CinematicRenderer.tsx").read_text(
+    source = (COMPOSER / "src/CinematicRenderer.tsx").read_text(
         encoding="utf-8"
     )
 
@@ -42,7 +42,7 @@ def test_chart_scenes_receive_the_theme_text_color() -> None:
     axis label, category label and value renders dark-on-dark and is invisible
     on any dark theme.
     """
-    source = (REPO_ROOT / "remotion-composer/src/Explainer.tsx").read_text(
+    source = (COMPOSER / "src/Explainer.tsx").read_text(
         encoding="utf-8"
     )
 
@@ -59,7 +59,7 @@ def test_comparison_card_surface_follows_the_theme() -> None:
     On a dark theme it receives the theme's light textColor, so without a
     themed card surface the labels are light-on-light.
     """
-    source = (REPO_ROOT / "remotion-composer/src/Explainer.tsx").read_text(
+    source = (COMPOSER / "src/Explainer.tsx").read_text(
         encoding="utf-8"
     )
     block = _jsx_block(source, "ComparisonCard")

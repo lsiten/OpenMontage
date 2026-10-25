@@ -27,6 +27,7 @@ from lib.pipeline_loader import (
     list_pipelines,
 )
 from lib.checkpoint import STAGES
+from lib.paths import remotion_composer_dir
 from schemas.artifacts import list_schemas
 from styles.playbook_loader import load_playbook, list_playbooks, validate_playbook
 from tools.base_tool import ToolTier, ToolStatus
@@ -415,7 +416,10 @@ class TestGoogleMusic:
 
     def test_missing_image_path_error(self, tmp_path):
         tool = GoogleMusic()
-        with patch.dict(os.environ, {"GEMINI_API_KEY": "test_key"}):
+        with (
+            patch.dict(os.environ, {"GEMINI_API_KEY": "test_key", "ALL_PROXY": "socks5://127.0.0.1:9"}),
+            patch("tools.google_credentials.get_genai_client", side_effect=ImportError("socksio unavailable")) as client,
+        ):
             inputs = {
                 "prompt": "music with missing image",
                 "image_path": str(tmp_path / "does_not_exist.png"),
@@ -426,6 +430,7 @@ class TestGoogleMusic:
             assert res.error is not None
             assert "Failed to load visual conditioning image" in res.error
             assert "Local reference image not found" in res.error
+            client.assert_not_called()
 
 
 # ---- Image Generation Tools ----
@@ -604,9 +609,12 @@ class TestVeoVideo:
 
     def test_missing_local_image_paths(self):
         tool = VeoVideo()
-        with patch.dict(
-            os.environ,
-            {"GEMINI_API_KEY": "test_key", "GOOGLE_GENAI_USE_VERTEXAI": "false"},
+        with (
+            patch.dict(os.environ, {
+                "GEMINI_API_KEY": "test_key", "GOOGLE_GENAI_USE_VERTEXAI": "false",
+                "ALL_PROXY": "socks5://127.0.0.1:9",
+            }),
+            patch("tools.google_credentials.get_genai_client", side_effect=ImportError("socksio unavailable")) as client,
         ):
             inputs = {
                 "prompt": "cinematic shot",
@@ -617,12 +625,16 @@ class TestVeoVideo:
             res = tool.execute(inputs)
             assert res.success is False
             assert "Local input image not found" in res.error
+            client.assert_not_called()
 
     def test_missing_reference_image_paths(self):
         tool = VeoVideo()
-        with patch.dict(
-            os.environ,
-            {"GEMINI_API_KEY": "test_key", "GOOGLE_GENAI_USE_VERTEXAI": "false"},
+        with (
+            patch.dict(os.environ, {
+                "GEMINI_API_KEY": "test_key", "GOOGLE_GENAI_USE_VERTEXAI": "false",
+                "ALL_PROXY": "socks5://127.0.0.1:9",
+            }),
+            patch("tools.google_credentials.get_genai_client", side_effect=ImportError("socksio unavailable")) as client,
         ):
             inputs = {
                 "prompt": "cinematic shot",
@@ -633,6 +645,7 @@ class TestVeoVideo:
             res = tool.execute(inputs)
             assert res.success is False
             assert "Local reference image not found" in res.error
+            client.assert_not_called()
 
 
 class TestNewToolsRegistry:
@@ -901,7 +914,7 @@ class TestSkillsExist:
 
 
 class TestRemotionScaffold:
-    REMOTION_DIR = PROJECT_ROOT / "remotion-composer"
+    REMOTION_DIR = remotion_composer_dir()
 
     def test_package_json_exists(self):
         assert (self.REMOTION_DIR / "package.json").exists()

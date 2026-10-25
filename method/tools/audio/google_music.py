@@ -144,19 +144,10 @@ class GoogleMusic(BaseTool):
             import requests
             from google.genai import types
             from tools.google_credentials import get_genai_client, GOOGLE_API_TIMEOUT_MS
-
-            http_options = types.HttpOptions(timeout=GOOGLE_API_TIMEOUT_MS)
-            # Lyria 3 is served only from Vertex's global location.
-            client = get_genai_client(http_options=http_options, location="global")
         except ImportError as e:
             return ToolResult(
                 success=False,
                 error=f"Failed to import required Google libraries: {e}. Run 'uv pip install google-genai requests'",
-            )
-        except Exception as e:
-            return ToolResult(
-                success=False,
-                error=f"Failed to initialize Google GenAI Client: {e}",
             )
 
         prompt = inputs["prompt"]
@@ -234,6 +225,16 @@ class GoogleMusic(BaseTool):
             )
 
         model_name = "lyria-3-pro-preview"
+
+        try:
+            http_options = types.HttpOptions(timeout=GOOGLE_API_TIMEOUT_MS)
+            # Lyria 3 is served only from Vertex's global location.
+            client = get_genai_client(http_options=http_options, location="global")
+        except Exception as e:
+            return ToolResult(
+                success=False,
+                error=f"Failed to initialize Google GenAI Client: {e}",
+            )
 
         try:
             # Create parent dirs if needed

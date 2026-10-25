@@ -27,7 +27,10 @@ from pathlib import Path
 NPX = shutil.which("npx") or "npx"
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-COMPOSER_DIR = REPO_ROOT / "remotion-composer"
+sys.path.insert(0, str(REPO_ROOT))
+from lib.paths import remotion_composer_dir
+
+COMPOSER_DIR = remotion_composer_dir()
 
 
 def _load(path: Path) -> dict:

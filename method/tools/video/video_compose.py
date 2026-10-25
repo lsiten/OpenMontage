@@ -42,6 +42,8 @@ from pathlib import Path
 from typing import Any, Optional
 from urllib.parse import unquote, urlsplit
 
+from lib.paths import remotion_composer_dir
+
 from tools.base_tool import (
     BaseTool,
     Determinism,
@@ -237,7 +239,7 @@ class VideoCompose(BaseTool):
 
         if not _shutil.which("npx"):
             return False
-        composer_dir = Path(__file__).resolve().parent.parent.parent / "remotion-composer"
+        composer_dir = remotion_composer_dir()
         if not composer_dir.exists() or not (composer_dir / "package.json").exists():
             return False
         # Check that node_modules are actually installed — without this,
@@ -293,7 +295,7 @@ class VideoCompose(BaseTool):
                 "and motion-graphics pipelines that already use the scene-component stack."
             )
         else:
-            composer_dir = Path(__file__).resolve().parent.parent.parent / "remotion-composer"
+            composer_dir = remotion_composer_dir()
             if composer_dir.exists() and (composer_dir / "package.json").exists() and not (composer_dir / "node_modules").exists():
                 info["remotion_note"] = (
                     "Remotion project exists but node_modules are NOT installed. "
@@ -972,7 +974,7 @@ class VideoCompose(BaseTool):
                 ),
             )
 
-        composer_dir = Path(__file__).resolve().parent.parent.parent / "remotion-composer"
+        composer_dir = remotion_composer_dir()
         if not composer_dir.exists() or not (composer_dir / "node_modules").exists():
             return ToolResult(
                 success=False,
@@ -1982,8 +1984,7 @@ class VideoCompose(BaseTool):
             if theme_config:
                 props["themeConfig"] = theme_config
 
-        # remotion-composer lives at project root
-        composer_dir = Path(__file__).resolve().parent.parent.parent / "remotion-composer"
+        composer_dir = remotion_composer_dir()
         if not composer_dir.exists():
             return ToolResult(
                 success=False,

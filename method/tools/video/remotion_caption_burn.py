@@ -38,6 +38,8 @@ import time
 from pathlib import Path
 from typing import Any
 
+from lib.paths import remotion_composer_dir
+
 from tools.base_tool import (
     BaseTool,
     Determinism,
@@ -157,8 +159,8 @@ class RemotionCaptionBurn(BaseTool):
     def _find_remotion_root(self) -> Path | None:
         """Find the remotion-composer directory relative to the repo."""
         candidates = [
+            remotion_composer_dir(),
             Path.cwd() / "remotion-composer",
-            Path(__file__).resolve().parent.parent.parent / "remotion-composer",
         ]
         for p in candidates:
             if (
