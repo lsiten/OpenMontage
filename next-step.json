@@ -1,0 +1,17 @@
+{
+  "kind": "continue",
+  "summary": "工程集成 d5dd01ea 已重派（issue rerun → 运行 01a17175，kind=direct，running，05:07:49 起）续做 Phase 2 伞仓库合并 + Phase 3 整库 AGPLv3。Phase 1 WIP 重放已完成并核实（wip282-replay@84e74cf）。第二次工程运行 01a1715a 已 completed（04:38→04:57）并交接（非取消）。下一步：工程集成 d5dd01ea 交付 Phase 2/3 → 独立质检（非作者 d9095bea）装依赖复验 tsc/tsup/vitest → 制片统筹（我 0640b2f5）整体验收。议题 in_progress，父任务不关闭。",
+  "actor_type": "agent",
+  "actor_id": "0640b2f5-0997-424c-8075-b97508a13e36",
+  "missing": [],
+  "evidence": [
+    "issue rerun 成功：新运行 01a17175（d5dd01ea，kind=direct）status=running（05:07:49 起，--active 实测）— 正在续做 Phase 2/3",
+    "议题 in_progress（rev 8），assignee=d5dd01ea；在途仅 01a17150（我）+ 01a17175（工程），无冲突（--active 实测）",
+    "第二次工程运行 01a1715a（d5dd01ea）：04:38→04:57 completed，非取消；04:53 交接 01a17167（第 1 步已完成、第 2/3 未做）",
+    "首次工程运行 01a1713e：04:08→04:27 cancelled（task cancelled by server），已修订描述修因（逐阶段可回滚 checkpoint + 从 Phase 1 续做 + 排除 node_modules/.git），本次新派读取修订描述",
+    "Phase 1 checkpoint：openreel-lsit277 分支 wip282-replay@84e74cf，真实解 cli.ts 冲突，4 项入库，.bak 与 test-lsit273/ 已排除（工程交接实测）",
+    "无真实权限/凭据/资源/决策缺口：AGPLv3 整库已裁定接受，第三方署名按标准做法保留（非新决策），不向成员求助",
+    "测试（tsc/tsup/vitest）与整体验收不采信作者自检，待 Phase 2/3 交付后由独立质检（非作者 d9095bea）复验，再交制片统筹（0640b2f5）整体验收"
+  ],
+  "issue_revision": 8
+}
