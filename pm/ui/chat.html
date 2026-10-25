@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PM — 对话入口</title>
+  <link rel="stylesheet" href="/ui/pm.css" />
+</head>
+<body>
+  <header>
+    <h1>PM · 对话入口</h1>
+    <nav class="nav">
+      <a href="/">项目列表</a>
+      <a href="/chat" class="active">对话入口</a>
+    </nav>
+  </header>
+  <main>
+    <div class="notice">
+      本地对话入口：把「需求描述 → 管线选择 → 概念/成本提案」。不直接调用付费 provider；
+      任何付费调用仍需 proposal 审批 + cost_tracker.reserve + 用户确认（本轮不试运行）。
+    </div>
+    <div class="card">
+      <label>需求（自然语言）</label>
+      <textarea id="requirement" placeholder="例如：帮我做一个关于黑洞的 60 秒科普讲解视频，本地离线能做的优先。"></textarea>
+      <div class="row">
+        <div><label>预算 (USD, 可选)</label><input id="budget" type="number" step="0.1" placeholder="留空用管线默认" /></div>
+        <div><label>成本模式</label><select id="mode"><option value="warn">warn</option><option value="observe">observe</option><option value="cap">cap</option></select></div>
+        <div style="flex:0;align-self:flex-end"><button id="plan">生成方案</button></div>
+      </div>
+    </div>
+    <div id="result"></div>
+  </main>
+  <script src="/ui/pm.js"></script>
+  <script>
+    const capList = (caps) => caps && caps.length
+      ? `<ul>${caps.map(c => `<li>${PM.esc(c.capability)} · ${PM.esc(c.tool)} <span class="muted">(${PM.esc(c.provider)}, ${PM.esc(c.runtime)})</span> ${c.note ? '<span class="' + (c.classification === "paid" ? "paid" : "local") + '">' + PM.esc(c.note) + "</span>" : ""}</li>`).join("")}</ul>`
+      : `<p class="muted">无</p>`;
+    function render(resp) {
+      const ce = resp.cost_estimate;
+      const c = document.getElementById("result");
+      c.innerHTML = `
+      <div class="card">
+        <h2>方案：${PM.esc(resp.pipeline_type)} <span class="badge">置信 ${Math.round(resp.confidence*100)}%</span></h2>
+        <div class="kv">
+          <div class="k">候选管线</div><div>${resp.candidates.map(x => `${PM.esc(x.pipeline_type)} (得分 ${x.score})`).join("、") || "—"}</div>
+          <div class="k">概念</div><div>${PM.esc(resp.concept.summary)}</div>
+          <div class="k">视觉方法</div><div class="muted">${PM.esc(resp.concept.visual_approach)}</div>
+          <div class="k">成本(本/付)</div><div>总预估 ${ce.total_estimated_usd} USD；预算默认 ${ce.budget_default_usd} USD；预留 ${ce.reserve_usd} USD</div>
+        </div>
+        <div class="notice">${PM.esc(ce.note)}</div>
+        <div class="section-title">需人类审批项</div>
+        <ul>${resp.approval_items.map(a => `<li>${PM.esc(a.kind)} — ${PM.esc(a.detail)}</li>`).join("") || "<li class='muted'>无</li>"}</ul>
+        <div class="section-title">本地能力 (${resp.local_capabilities.length})</div>
+        ${capList(resp.local_capabilities)}
+        <div class="section-title">付费能力 — 未接入/需授权 (${resp.paid_capabilities.length})</div>
+        ${capList(resp.paid_capabilities)}
+        <div class="row" style="margin-top:14px">
+          <button id="trigger" ${resp.can_trigger ? "" : "disabled"}>创建项目（不启动付费）</button>
+          <button class="secondary" id="replan">重新生成</button>
+        </div>
+        <p class="muted" id="trigger-msg"></p>
+      </div>`;
+      document.getElementById("trigger").addEventListener("click", async () => {
+        const msg = document.getElementById("trigger-msg");
+        const payload = {
+          requirement: resp.requirement,
+          pipeline_type: resp.pipeline_type,
+          concept: resp.concept.summary,
+          cost_budget_usd: ce.budget_default_usd,
+          cost_mode: document.getElementById("mode").value,
+        };
+        try {
+          const t = await PM.post("/api/chat/trigger", payload);
+          msg.innerHTML = `已创建项目 <a href="/p/${encodeURIComponent(t.project_id)}">${PM.esc(t.project_id)}</a>（未调用付费 provider）`;
+        } catch (e) { msg.textContent = "触发失败: " + e.message; }
+      });
+      document.getElementById("replan").addEventListener("click", () => { document.getElementById("result").innerHTML = ""; });
+    }
+    document.getElementById("plan").addEventListener("click", async () => {
+      const req = document.getElementById("requirement").value.trim();
+      if (!req) return;
+      const payload = { requirement: req };
+      const b = document.getElementById("budget").value;
+      if (b) payload.budget_usd = parseFloat(b);
+      payload.cost_mode = document.getElementById("mode").value;
+      document.getElementById("result").innerHTML = `<div class="card muted">生成中…</div>`;
+      try { render(await PM.post("/api/chat", payload)); }
+      catch (e) { document.getElementById("result").innerHTML = `<div class="card paid">${PM.esc(e.message)}</div>`; }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+{
+  "kind": "review",
+  "summary": "LSIT-288 实现/制作已交付并置 in_review（工程集成 d5dd01ea 为报告方）。两层能力（① 独立 PM 应用 pm/：CRUD+列表/详情/状态/成本；② 对话式驱动 pm/chat 复用 13 管线选择逻辑，不新增执行引擎、不冒充真实 AI）按已验收 LSIT-285 契约实现，写入绑定 worktree（未跟踪 pm/+tests/pm/，未碰已跟踪基线文件）。待非作者独立质检（d9095bea-c787-4560-b6c2-c6d3c6b2389e）复验 → 制片统筹（0640b2f5-0997-424c-8075-b97508a13e36）整体验收；父 LSIT-284 保持 in_progress，本任务不擅自关闭。",
+  "actor_type": "agent",
+  "actor_id": "d5dd01ea-2fbf-412c-8c8e-50fa95303ebd",
+  "missing": [],
+  "evidence": [
+    "pytest tests/pm -> 22 passed (exit 0)",
+    "基线守护 pytest tests/backlot + tests/contracts/test_backlot_contract.py + test_pipeline_catalog.py -> 100 passed, 1 skipped (与 pm 前基线一致)",
+    "本地 smoke(隔离 temp DB) -> ALL PASS (exit 0): /api/health, /api/chat plan->screen-demo+本地/付费成本分类, /api/chat/trigger 建项目 notes=未调用付费 provider, /api/capabilities 117(local62/paid55,54/55 标注未接入/需授权), CRUD 状态/预算持久化, detail",
+    "零付费入口 registry.provider_menu() -> 24 能力 report-only; render_demo.py --list -> 3 个 zero-key demo",
+    "产物登记: pm/ + tests/pm/ 逐文件内容 sha256 + 基线 main@f10953d0 (HEAD f1c31504, git diff main..HEAD 空) 见附件 artifacts-manifest.md; 可下载 pm-deliverable.tgz sha256 ef9fee3c645deaee3668b2b77444260bc778f95509503f0295c54231ee46ac39",
+    "本轮修复 4 处(仅 pm/ 未跟踪层): store.py RLock(修 create_project 自死锁/hang), store.py update_project SQL 占位符错位, db.py check_same_thread=False(修跨线程 ProgrammingError), server.py capabilities local_available 用 dict 取值",
+    "未覆盖: scripts/backlot_simulate_run.py --fast 失败为基线脚本既有缺陷(已跟踪基线文件,本轮未改),建议派发修复; render_demo.py 完整 Remotion 渲染未跑(需 Node+Remotion,非 pm/ 交付)"
+  ],
+  "issue_revision": 6
+}
