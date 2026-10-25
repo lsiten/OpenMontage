@@ -22,6 +22,7 @@ Hard boundaries (Agent Identity):
 from __future__ import annotations
 
 import re
+import uuid
 from typing import Optional
 
 from pm import cost as cost_mod
@@ -52,13 +53,14 @@ def generate_concept(requirement: str, pipeline_type: str, selection: schema.Pip
     selected pipeline's known shape, but it is NOT a validated real-AI
     generation. ``concept_is_offline_substitute`` is always True.
     """
-    hook = (requirement or "").strip().splitlines()[0] or "（未提供需求）"
+    hook = (requirement or "").strip() or "（未提供需求）"
+    hook = hook.splitlines()[0]
     concept = (
         f"{OFFLINE_SUBSTITUTE_BANNER}\n"
         f"标题: {_title_from(requirement)}\n"
         f"需求: {hook}\n"
         f"管线: {pipeline_type}（置信度 {selection.confidence:.0%}；备选 {selection.alternatives or '—'}）\n"
-        f"视觉: 本地/离线运行时优先（Remotion/HyperFrames；TTS 用 Piper；无 GPU 时仅 Remotion/HyperFrames/Piper 可用）\n"
+        f"视觉: 本地/离线运行时优先；具体可用性以能力菜单为准，本地分类不代表已安装或已接入。\n"
         f"说明: 这是规则生成的离线替身概念，用于立项与审批；真实生成质量未接入/未验收，"
         f"付费 provider 未接入。"
     )
@@ -168,20 +170,13 @@ class ChatSession:
         call any paid provider.
         """
         proposal = self.build(requirement, pipeline_override=pipeline_override)
-        project_id = _slugify(proposal.requirement) or "project"
+        project_id = f"{_slugify(proposal.requirement)}-{uuid.uuid4().hex[:12]}"
         title = _title_from(proposal.requirement)
 
         # 1) create the on-disk project directory (canonical layout) — the
         #    PM write layer owns this; it is NOT a Backlot read-only file.
-        try:
-            from lib.checkpoint import init_project
-            init_project(
-                project_id,
-                title=title,
-                pipeline_type=proposal.pipeline_type,
-            )
-        except Exception:
-            pass  # degrade: the SQLite record still records the project.
+        from lib.checkpoint import init_project
+        init_project(project_id, title=title, pipeline_type=proposal.pipeline_type)
 
         # 2) persist PM metadata.
         project = schema.PmProject(

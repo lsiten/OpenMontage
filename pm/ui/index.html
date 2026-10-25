@@ -19,22 +19,21 @@
     <span class="badge" id="zeroPaidBadge" title="零付费/本地/无付费 AI">零付费·本地</span>
   </header>
 
-  <p class="sub">
-    PM 是与只读 Backlot 看板并存的<b>可写层</b>。对话入口复用 13 条 agentic 管线的“管线选择”逻辑，
-    <b>不新增执行引擎</b>；生成的概念是<b>离线替身</b>，不代表真实 AI 服务已接入或生成质量已验收。
-  </p>
+  <p class="sub">零付费本地工作台。提案为规则生成的离线替身；真实 AI 服务和自动 agent 执行通道未接入。制作记录来自项目实际文件。</p>
 
   <main class="grid">
     <section class="col chat-col">
       <h2>对话驱动</h2>
-      <textarea id="requirement" rows="3" placeholder="用一句话描述你要做的视频，例如：做一个介绍如何安装 Python 的教程片"></textarea>
+      <label for="requirement">视频需求</label>
+      <textarea id="requirement" rows="3" placeholder="例如：制作 OpenMontage 流程演示"></textarea>
       <div class="row">
-        <input id="pipeline" list="pipelineList" placeholder="管线（可留空自动选择）" autocomplete="off">
+        <label for="pipeline">管线（留空自动选择）</label>
+        <input id="pipeline" list="pipelineList" autocomplete="off">
         <datalist id="pipelineList"></datalist>
       </div>
       <div class="row btns">
-        <button id="proposeBtn" class="primary">生成提案</button>
-        <button id="createBtn">创建项目</button>
+        <button id="proposeBtn">生成提案</button>
+        <button id="createBtn" class="primary">创建项目</button>
       </div>
       <div class="notice" id="notice" role="status"></div>
       <div class="proposal" id="proposal" hidden></div>
@@ -44,6 +43,7 @@
       <h2>项目 <span class="dim" id="listCount"></span></h2>
       <div class="cards" id="cards"></div>
       <p class="hint" id="empty" hidden>暂无项目；在左侧输入需求并“创建项目”，它会显示在这里。</p>
+      <details class="row"><summary>回收站（可恢复）</summary><div id="trash"></div></details>
     </section>
 
     <section class="col detail-col">
@@ -54,14 +54,45 @@
         <button class="tab" data-tab="approvals" data-act="tab">待审批</button>
       </div>
       <div class="detail" id="detail"></div>
+      <form id="manage" hidden>
+        <h3>管理项目</h3>
+        <label for="editTitle">标题</label><input id="editTitle" required maxlength="200">
+        <label for="editStatus">状态</label>
+        <select id="editStatus">
+          <option value="draft">草稿</option><option value="proposed">已立项</option>
+          <option value="in_progress">进行中</option><option value="blocked">受阻</option>
+          <option value="done">已完成</option><option value="cancelled">已取消</option>
+        </select>
+        <label for="editBudget">预算上限（USD，仅记录，不授权付费）</label><input id="editBudget" type="number" min="0" step="0.01" required>
+        <div class="row btns"><button id="saveBtn" type="submit">保存修改</button><button id="deleteBtn" type="button">移至回收站</button></div>
+        <p id="manageNotice" role="status"></p>
+      </form>
+      <section id="productionPanel" hidden>
+        <h3>制作任务</h3>
+        <label for="productionMode">制作模式</label>
+        <select id="productionMode"><option value="local_technical_test">本地技术测试：15秒 / 720p / 24fps / 三镜头</option><option value="agent_production">自定义需求制作（agent 未接入）</option></select>
+        <p class="hint">技术测试使用自制或离线替身素材，不代表真实 AI 已接入。提交只保存任务，需由 agent 按既有管线接手。</p>
+        <div class="row btns"><button id="runBtn" type="button">提交制作任务</button><button id="refreshBtn" type="button">刷新记录</button></div>
+        <p id="productionStatus" role="status"></p>
+        <div id="stages"></div><div id="scenes"></div>
+        <p id="productionError" role="alert"></p>
+        <video id="playback" controls preload="metadata" hidden aria-label="制作成片回放"></video>
+        <a id="downloadVideo" hidden download>下载成片</a>
+        <details class="row"><summary>制作日志与产物</summary><pre id="productionLog"></pre><div id="artifactNames"></div></details>
+      </section>
     </section>
   </main>
 
-  <section class="caps">
-    <h2>能力菜单 <span class="dim" id="capSummary"></span></h2>
+  <details class="caps">
+    <summary>能力菜单 <span class="dim" id="capSummary"></span></summary>
     <div class="cap-grid" id="capGrid"></div>
-  </section>
+  </details>
 </div>
+<dialog id="deleteDialog" aria-labelledby="deleteHeading">
+  <h2 id="deleteHeading">将项目移至回收站？</h2>
+  <p>项目从当前列表隐藏。SQLite 元数据、对话、费用记录、项目目录和媒体全部保留，不移动、不删除文件。可从回收站恢复；此操作不停止已由外部 agent 开始的制作。</p>
+  <form method="dialog" class="btns"><button value="cancel" autofocus>取消</button><button id="confirmDelete" value="confirm">确认移入回收站</button></form>
+</dialog>
 <script src="/ui/index.js"></script>
-</HTMLEOF>
-echo "wrote index.html: $(wc -l < pm/ui/index.html) lines"
+</body>
+</html>

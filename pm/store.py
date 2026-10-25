@@ -22,6 +22,7 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Optional
+from typing_extensions import TypedDict
 
 from lib.paths import REPO_ROOT
 from pm import schema
@@ -78,11 +79,21 @@ CREATE TABLE IF NOT EXISTS chat_messages (
 CREATE INDEX IF NOT EXISTS idx_approvals_project ON approvals(project_id);
 CREATE INDEX IF NOT EXISTS idx_cost_project ON cost_entries(project_id);
 CREATE INDEX IF NOT EXISTS idx_chat_project ON chat_messages(project_id);
+CREATE TABLE IF NOT EXISTS deleted_projects (
+    project_id TEXT PRIMARY KEY,
+    deleted_at TEXT NOT NULL
+);
 """
 
 
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+class DeletedProject(TypedDict):
+    project_id: str
+    title: str
+    deleted_at: str
 
 
 class PMDatabase:
@@ -170,7 +181,7 @@ class PMDatabase:
         with self._lock:
             conn = self._cur()
             row = conn.execute(
-                "SELECT * FROM projects WHERE project_id = ?", (project_id,)
+                "SELECT * FROM projects WHERE project_id = ? AND project_id NOT IN (SELECT project_id FROM deleted_projects)", (project_id,)
             ).fetchone()
             if row is None:
                 return None
@@ -180,7 +191,7 @@ class PMDatabase:
         with self._lock:
             conn = self._cur()
             rows = conn.execute(
-                "SELECT * FROM projects ORDER BY updated_at DESC"
+                "SELECT * FROM projects WHERE project_id NOT IN (SELECT project_id FROM deleted_projects) ORDER BY updated_at DESC"
             ).fetchall()
             return [_row_to_project(r) for r in rows]
 
@@ -205,13 +216,30 @@ class PMDatabase:
         return self.get_project(project_id)
 
     def delete_project(self, project_id: str) -> bool:
+        """Hide a project; retain metadata, history and every media file."""
         with self._lock:
+            if self.get_project(project_id) is None:
+                return False
             conn = self._cur()
-            cur = conn.execute("DELETE FROM projects WHERE project_id = ?", (project_id,))
-            conn.execute("DELETE FROM approvals WHERE project_id = ?", (project_id,))
-            conn.execute("DELETE FROM cost_entries WHERE project_id = ?", (project_id,))
-            conn.execute("DELETE FROM chat_messages WHERE project_id = ?", (project_id,))
-            return cur.rowcount > 0
+            conn.execute("INSERT INTO deleted_projects VALUES (?, ?)", (project_id, _now()))
+            return True
+
+    def list_deleted(self) -> list[DeletedProject]:
+        with self._lock:
+            rows = self._cur().execute(
+                "SELECT p.project_id, p.title, d.deleted_at FROM projects p JOIN deleted_projects d USING(project_id) ORDER BY d.deleted_at DESC"
+            ).fetchall()
+            return [DeletedProject(project_id=row[0], title=row[1], deleted_at=row[2]) for row in rows]
+
+    def restore_project(self, project_id: str) -> schema.PmProject | None:
+        with self._lock:
+            self._cur().execute("DELETE FROM deleted_projects WHERE project_id = ?", (project_id,))
+            return self.get_project(project_id)
+
+    def _is_deleted(self, project_id: str) -> bool:
+        return self._cur().execute(
+            "SELECT 1 FROM deleted_projects WHERE project_id = ?", (project_id,)
+        ).fetchone() is not None
 
     # ---- approvals --------------------------------------------------
 
@@ -241,6 +269,8 @@ class PMDatabase:
 
     def get_approvals(self, project_id: str) -> list[schema.Approval]:
         with self._lock:
+            if self._is_deleted(project_id):
+                return []
             conn = self._cur()
             rows = conn.execute(
                 "SELECT * FROM approvals WHERE project_id = ? ORDER BY requested_at",
@@ -300,6 +330,8 @@ class PMDatabase:
 
     def get_cost_entries(self, project_id: str) -> list[schema.CostEntry]:
         with self._lock:
+            if self._is_deleted(project_id):
+                return []
             conn = self._cur()
             rows = conn.execute(
                 "SELECT * FROM cost_entries WHERE project_id = ? ORDER BY created_at",
@@ -335,6 +367,8 @@ class PMDatabase:
 
     def get_chat_messages(self, project_id: str) -> list[dict[str, str]]:
         with self._lock:
+            if self._is_deleted(project_id):
+                return []
             conn = self._cur()
             rows = conn.execute(
                 "SELECT role, content, created_at FROM chat_messages WHERE project_id = ? ORDER BY id",
@@ -372,7 +406,7 @@ def _row_to_project(row: Any) -> schema.PmProject:
         concept=concept or "",
         concept_is_offline_substitute=bool(is_sub),
         status=status or "draft",
-        mode=schema.BudgetMode(mode=mode or "warn"),
+        mode=schema.BudgetMode(mode=mode or "warn", total_usd=cost_budget_usd or 0.0),
         cost_budget_usd=cost_budget_usd or 0.0,
         source=source or "manual",
         cost_estimate=estimate,

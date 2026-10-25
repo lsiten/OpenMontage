@@ -16,8 +16,11 @@ let current = null;   // current project id
 let tab = "overview"; // current detail tab
 
 async function api(path, opts) {
-  const res = await fetch(path, opts);
-  if (!res.ok) throw new Error(`${path} -> ${res.status}`);
+  const res = await fetch(path, { ...opts, signal: AbortSignal.timeout(20000) });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(`${res.status}: ${typeof error.detail === 'string' ? error.detail : '请求参数或状态无效'}`);
+  }
   if (res.status === 204) return null;
   const ct = res.headers.get("content-type") || "";
   return ct.includes("application/json") ? res.json() : res.text();
@@ -41,7 +44,9 @@ async function loadProjects() {
     for (const p of list) {
       const pid = p.project_id;
       const st = p.pm_status || "draft";
-      const el = document.createElement("div");
+      const el = document.createElement("button");
+      el.type = 'button';
+      el.setAttribute('aria-pressed', String(pid === current));
       el.className = "card";
       el.innerHTML =
         `<div class="t">${esc(p.title || p.requirement || pid)}</div>` +
@@ -58,8 +63,142 @@ async function loadProjects() {
 
 function selectProject(pid) {
   current = pid;
+  history.replaceState(null, '', `?project=${encodeURIComponent(pid)}`);
   $("detailId").textContent = pid;
   loadDetail();
+  loadManagement();
+  loadProduction();
+}
+
+async function loadManagement() {
+  try {
+    const pid = current;
+    const v = await api(`/api/projects/${encodeURIComponent(pid)}`);
+    if (current !== pid) return;
+    $('manage').hidden = false;
+    $('productionPanel').hidden = false;
+    $('editTitle').value = v.pm.title;
+    $('editStatus').value = v.pm.status;
+    $('editBudget').value = v.pm.cost_budget_usd;
+    $('manageNotice').textContent = '';
+  } catch (e) {
+    if (!(e instanceof Error)) throw e;
+    $('manage').hidden = true;
+    $('productionPanel').hidden = true;
+    setNotice(e.message, 'err');
+  }
+}
+
+async function saveManagement(event) {
+  event.preventDefault();
+  $('saveBtn').disabled = true;
+  try {
+    await api(`/api/projects/${encodeURIComponent(current)}`, {
+      method: 'PUT', headers: {'content-type':'application/json'},
+      body: JSON.stringify({title: $('editTitle').value, status: $('editStatus').value,
+        cost_budget_usd: Number($('editBudget').value)}),
+    });
+    $('manageNotice').textContent = '修改已保存到本地数据库。';
+    await Promise.all([loadProjects(), loadDetail()]);
+  } catch (e) {
+    if (!(e instanceof Error)) throw e;
+    $('manageNotice').textContent = `保存失败：${e.message}`;
+  } finally { $('saveBtn').disabled = false; }
+}
+
+async function loadTrash() {
+  const list = await api('/api/trash');
+  $('trash').replaceChildren();
+  for (const p of list) {
+    const item = document.createElement('div');
+    item.className = 'trash-item';
+    const text = document.createElement('span');
+    text.textContent = p.title || p.project_id;
+    const restore = document.createElement('button');
+    restore.textContent = '恢复';
+    restore.addEventListener('click', async () => {
+      restore.disabled = true;
+      try {
+        await api(`/api/projects/${encodeURIComponent(p.project_id)}/restore`, {method:'POST'});
+        await Promise.all([loadProjects(), loadTrash()]);
+        selectProject(p.project_id);
+      } catch (e) {
+        if (!(e instanceof Error)) throw e;
+        setNotice(`恢复失败：${e.message}`, 'err');
+        restore.disabled = false;
+      }
+    });
+    item.append(text, restore);
+    $('trash').append(item);
+  }
+  if (!list.length) $('trash').textContent = '回收站为空。';
+}
+
+async function deleteCurrent() {
+  try {
+    await api(`/api/projects/${encodeURIComponent(current)}`, {method:'DELETE'});
+    current = null;
+    history.replaceState(null, '', '/');
+    $('manage').hidden = true;
+    $('productionPanel').hidden = true;
+    $('playback').pause();
+    $('detail').textContent = '项目已移至回收站，可从项目列表下方恢复。';
+    $('detailId').textContent = '';
+    await Promise.all([loadProjects(), loadTrash()]);
+  } catch (e) {
+    if (!(e instanceof Error)) throw e;
+    setNotice(`回收失败：${e.message}`, 'err');
+  }
+}
+
+async function loadProduction() {
+  if (!current) return;
+  const pid = current;
+  try {
+    const [p, board] = await Promise.all([
+      api(`/api/projects/${encodeURIComponent(pid)}/production`),
+      api(`/api/projects/${encodeURIComponent(pid)}`),
+    ]);
+    if (current !== pid) return;
+    const labels = {not_requested:'尚未提交', awaiting_agent:'等待 agent 接手（执行通道未接入）',
+      in_progress:'实际制作中', completed:'已渲染（待独立质检）', failed:'制作失败', awaiting_human:'等待阶段审批'};
+    $('productionStatus').textContent = labels[p.status] || p.status;
+    $('productionError').textContent = p.error || '';
+    $('productionLog').textContent = p.log || '暂无制作日志。';
+    $('artifactNames').textContent = `实际产物：${p.artifact_names.join('、') || '无'}`;
+    $('stages').innerHTML = (board.stages || []).map(s => `<div class="stage">${esc(s.name || s.stage)} · ${esc(s.status)}</div>`).join('');
+    const plan = board.artifacts?.scene_plan;
+    const scenes = plan?.scenes || plan?.data?.scenes || [];
+    $('scenes').innerHTML = scenes.map(s => `<p>${esc(s.start_seconds)}–${esc(s.end_seconds)}s · ${esc(s.description)}</p>`).join('');
+    const video = $('playback');
+    video.hidden = !p.media_url;
+    $('downloadVideo').hidden = !p.media_url;
+    if (p.media_url) {
+      if (video.getAttribute('src') !== p.media_url) video.src = p.media_url;
+      $('downloadVideo').href = p.media_url;
+    } else {
+      video.pause(); video.removeAttribute('src');
+    }
+    $('runBtn').disabled = Boolean(p.request);
+  } catch (e) {
+    if (!(e instanceof Error)) throw e;
+    if (current === pid) $('productionError').textContent = `制作记录加载失败：${e.message}`;
+  }
+}
+
+async function submitProduction() {
+  $('runBtn').disabled = true;
+  try {
+    await api(`/api/projects/${encodeURIComponent(current)}/run`, {
+      method:'POST', headers:{'content-type':'application/json'},
+      body: JSON.stringify({mode:$('productionMode').value}),
+    });
+    await loadProduction();
+  } catch (e) {
+    if (!(e instanceof Error)) throw e;
+    $('productionError').textContent = `提交失败：${e.message}`;
+    $('runBtn').disabled = false;
+  }
 }
 
 /* ---- detail ---- */
@@ -86,15 +225,10 @@ function renderOverview(v) {
   const pm = v.pm || {};
   d.innerHTML =
     `<div class="kv">` +
-    `<div class="k">标题</div><div class="v">${esc(pm.title || v.title || "—")}</div>` +
     `<div class="k">需求</div><div class="v">${esc(pm.requirement || "—")}</div>` +
     `<div class="k">管线</div><div class="v">${esc(pm.pipeline_type || "—")}</div>` +
-    `<div class="k">状态</div><div class="v">${esc(pm.status || "—")} · 来源 ${esc(pm.source || "—")}</div>` +
-    `<div class="k">预算</div><div class="v">${esc(pm.cost_budget_usd ?? "—")} USD</div>` +
     `</div>` +
-    (pm.concept ? `<div class="banner">${esc(pm.concept)}</div>` : "") +
-    (pm.cost_estimate ? renderCostSummary(pm.cost_estimate) : "") +
-    `<p class="muted">离线替身/离线概念：不代表真实 AI 服务已接入，生成质量未验收。</p>`;
+    (pm.concept ? `<details><summary>查看离线提案</summary><div class="banner">${esc(pm.concept)}</div></details>` : "");
 }
 
 function renderCost(c) {
@@ -217,7 +351,8 @@ async function loadCapabilities() {
       grid.appendChild(el);
     }
   } catch (e) {
-    // degrade silently like Backlot ("never block, never break")
+    if (!(e instanceof Error)) throw e;
+    $('capSummary').textContent = `能力菜单读取失败：${e.message}`;
   }
 }
 
@@ -231,6 +366,14 @@ function init() {
   }
   $("proposeBtn").addEventListener("click", doPropose);
   $("createBtn").addEventListener("click", doCreate);
+  $('manage').addEventListener('submit', saveManagement);
+  $('deleteBtn').addEventListener('click', () => $('deleteDialog').showModal());
+  $('deleteDialog').addEventListener('close', () => {
+    if ($('deleteDialog').returnValue === 'confirm') deleteCurrent();
+  });
+  $('runBtn').addEventListener('click', submitProduction);
+  $('refreshBtn').addEventListener('click', loadProduction);
+  setInterval(() => { if (!document.hidden) loadProduction(); }, 2500);
   document.querySelectorAll(".tab").forEach((t) => {
     t.addEventListener("click", () => {
       document.querySelectorAll(".tab").forEach((x) => x.classList.remove("active"));
@@ -241,6 +384,7 @@ function init() {
   });
   loadProjects();
   loadCapabilities();
+  loadTrash().catch(e => setNotice(`回收站加载失败：${e.message}`, 'err'));
   const pid = new URLSearchParams(location.search).get("project");
   if (pid) selectProject(pid);
 }

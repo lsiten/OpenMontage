@@ -14,11 +14,12 @@ named as "未接入/需授权".
 
 from __future__ import annotations
 
-import asyncio
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import FileResponse
+from anyio import to_thread
 from fastapi.staticfiles import StaticFiles
 
 from pm import DEFAULT_PORT
@@ -26,7 +27,8 @@ from pm import chat as chat_mod
 from pm import cost as cost_mod
 from pm import schema
 from pm import state as state_mod
-from pm.store import get_db
+from pm.store import get_db, DeletedProject
+from pm.production import ProductionInput, ProductionRequest, ProductionView, request_production, observe_production
 
 UI_DIR = Path(__file__).resolve().parent / "ui"
 
@@ -37,6 +39,42 @@ def _db():
 
 def create_app() -> FastAPI:
     app = FastAPI(title="PM (production manager)", docs_url=None, redoc_url=None)
+
+    def require_project(project_id: str) -> schema.PmProject:
+        project = _db().get_project(project_id)
+        if project is None:
+            raise HTTPException(status_code=404, detail='项目不存在或已移至回收站')
+        return project
+
+    @app.get('/api/trash')
+    def trash() -> list[DeletedProject]:
+        return _db().list_deleted()
+
+    @app.post('/api/projects/{project_id}/restore')
+    def restore(project_id: str) -> schema.PmProject:
+        project = _db().restore_project(project_id)
+        if project is None:
+            raise HTTPException(status_code=404, detail='项目不存在')
+        return project
+
+    @app.post('/api/projects/{project_id}/run', status_code=202)
+    def production_request(project_id: str, req: ProductionInput) -> ProductionRequest:
+        project = require_project(project_id)
+        return request_production(project_id, project.pipeline_type, req)
+
+    @app.get('/api/projects/{project_id}/production')
+    def production_state(project_id: str) -> ProductionView:
+        require_project(project_id)
+        return observe_production(project_id)
+
+    @app.get('/api/projects/{project_id}/media/final.mp4')
+    def final_media(project_id: str) -> FileResponse:
+        require_project(project_id)
+        view = observe_production(project_id)
+        path = (state_mod._project_dir(project_id) / 'renders/final.mp4').resolve()
+        if not view.media_url or not path.is_relative_to(state_mod._project_dir(project_id).resolve()):
+            raise HTTPException(status_code=404, detail='成片尚不可用')
+        return FileResponse(path, media_type='video/mp4', filename=f'{project_id}.mp4')
 
     # ---- health -------------------------------------------------------
 
@@ -50,7 +88,7 @@ def create_app() -> FastAPI:
     async def create_project(req: schema.ProjectCreate) -> dict:
         # Create through the PM write layer (init_project + store + pm segment).
         session = chat_mod.ChatSession(_db())
-        project = await asyncio.to_thread(
+        project = await to_thread.run_sync(
             session.create_project, req.requirement, req.pipeline_type
         )
         # Apply the explicit budget / mode / source from the request.
@@ -61,30 +99,33 @@ def create_app() -> FastAPI:
             source=req.source,
             status="proposed",
         )
-        project = await asyncio.to_thread(_db().update_project, project.project_id, update)
+        project = await to_thread.run_sync(_db().update_project, project.project_id, update)
         return _project_json(project)
 
     @app.get("/api/projects")
     async def list_projects() -> list:
-        return await asyncio.to_thread(state_mod.list_project_views, _db())
+        return await to_thread.run_sync(state_mod.list_project_views, _db())
 
     @app.get("/api/projects/{project_id}")
+    @app.get("/api/project/{project_id}")
     async def get_project(project_id: str) -> dict:
-        view = await asyncio.to_thread(state_mod.load_project_view, project_id, _db())
+        view = await to_thread.run_sync(state_mod.load_project_view, project_id, _db())
         if view.get("pm") is None:
             raise HTTPException(status_code=404, detail=f"unknown project: {project_id}")
         return view
 
     @app.put("/api/projects/{project_id}")
+    @app.put("/api/project/{project_id}")
     async def update_project(project_id: str, req: schema.ProjectUpdate) -> dict:
-        updated = await asyncio.to_thread(_db().update_project, project_id, req)
+        updated = await to_thread.run_sync(_db().update_project, project_id, req)
         if updated is None:
             raise HTTPException(status_code=404, detail=f"unknown project: {project_id}")
         return _project_json(updated)
 
     @app.delete("/api/projects/{project_id}", status_code=204)
+    @app.delete("/api/project/{project_id}", status_code=204)
     async def delete_project(project_id: str) -> None:
-        ok = await asyncio.to_thread(_db().delete_project, project_id)
+        ok = await to_thread.run_sync(_db().delete_project, project_id)
         if not ok:
             raise HTTPException(status_code=404, detail=f"unknown project: {project_id}")
 
@@ -92,22 +133,24 @@ def create_app() -> FastAPI:
 
     @app.get("/api/projects/{project_id}/status")
     async def status_view(project_id: str) -> dict:
-        return await asyncio.to_thread(state_mod.status_view, project_id, _db())
+        require_project(project_id)
+        return await to_thread.run_sync(state_mod.status_view, project_id, _db())
 
     @app.get("/api/projects/{project_id}/cost")
     async def cost_view(project_id: str) -> dict:
-        return await asyncio.to_thread(state_mod.cost_view, project_id, _db())
+        require_project(project_id)
+        return await to_thread.run_sync(state_mod.cost_view, project_id, _db())
 
     @app.get("/api/capabilities")
     async def capabilities() -> dict:
-        return await asyncio.to_thread(cost_mod.build_capability_report)
+        return await to_thread.run_sync(cost_mod.build_capability_report)
 
     # ---- chat (conversational driver) --------------------------------
 
     @app.post("/api/chat/propose")
     async def propose(req: schema.ProjectCreate) -> dict:
         # Requirement -> proposal packet. No execution, no paid call.
-        proposal = await asyncio.to_thread(
+        proposal = await to_thread.run_sync(
             chat_mod.build_proposal, req.requirement, None, req.pipeline_type
         )
         return proposal.model_dump()
@@ -115,7 +158,7 @@ def create_app() -> FastAPI:
     @app.post("/api/chat")
     async def chat_create(req: schema.ProjectCreate) -> dict:
         session = chat_mod.ChatSession(_db())
-        proposal = await asyncio.to_thread(session.build, req.requirement, req.pipeline_type)
+        proposal = await to_thread.run_sync(session.build, req.requirement, req.pipeline_type)
         return proposal.model_dump()
 
     # ---- UI ----------------------------------------------------------

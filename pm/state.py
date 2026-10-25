@@ -129,11 +129,13 @@ def list_project_views(store: Optional[PMDatabase] = None) -> list[dict]:
     db = store or get_db()
     pm_rows = {p.project_id: p for p in db.list_projects()}
     views = []
-    for summary in list_projects():
-        pid = summary.get("project_id")
-        pm = pm_rows.get(pid)
+    summaries = {p['project_id']: p for p in list_projects()}
+    for pid, pm in pm_rows.items():
+        summary = summaries.get(pid, {'project_id': pid})
         merged = dict(summary)
         if pm is not None:
+            merged["title"] = pm.title
+            merged["pipeline_type"] = pm.pipeline_type
             merged["pm_status"] = pm.status
             merged["pm_source"] = pm.source
             merged["cost_budget_usd"] = pm.cost_budget_usd
