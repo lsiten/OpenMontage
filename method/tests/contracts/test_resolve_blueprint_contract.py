@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
+import shutil
 from pathlib import Path
 
 import pytest
@@ -26,6 +27,17 @@ from lib.resolve_blueprint import (
 FIXTURE_DIR = Path(__file__).parents[1] / "fixtures/resolve_blueprint"
 
 
+def load_fixture(directory: Path = FIXTURE_DIR) -> dict:
+    """Bind the portable test template to its own directory, never the cwd."""
+    payload = json.loads((directory / "valid.json").read_text(encoding="utf-8"))
+    payload["inputs"]["approved_media_roots"] = [
+        str(directory / root) for root in payload["inputs"]["approved_media_roots"]
+    ]
+    for clip in payload["clips"]:
+        clip["source_path"] = str(directory / clip["source_path"])
+    return payload
+
+
 def valid_blueprint(tmp_path: Path) -> dict:
     media_root = tmp_path / "media"
     media_root.mkdir()
@@ -46,9 +58,12 @@ def test_valid_fixture_passes_and_keeps_source_and_timeline_fps_independent(tmp_
     assert (payload["clips"][0]["source_fps"]["numerator"], payload["clips"][0]["source_fps"]["denominator"]) == (24, 1)
 
 
-def test_checked_in_fixture_is_self_contained():
-    payload = json.loads((FIXTURE_DIR / "valid.json").read_text(encoding="utf-8"))
-    validate_blueprint(payload)
+def test_checked_in_fixture_is_self_contained(tmp_path: Path, monkeypatch):
+    relocated = tmp_path / "relocated-fixture"
+    shutil.copytree(FIXTURE_DIR, relocated)
+    monkeypatch.chdir(tmp_path)
+    for directory in (FIXTURE_DIR, relocated):
+        validate_blueprint(load_fixture(directory))
 
 
 def test_schema_is_closed_and_rejects_unknown_fields(tmp_path: Path):

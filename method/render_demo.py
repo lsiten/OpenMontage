@@ -19,9 +19,10 @@ import subprocess
 import sys
 from pathlib import Path
 
+from lib.paths import remotion_composer_dir
 
 ROOT_DIR = Path(__file__).resolve().parent
-COMPOSER_DIR = ROOT_DIR / "remotion-composer"
+COMPOSER_DIR = remotion_composer_dir()
 PROPS_DIR = COMPOSER_DIR / "public" / "demo-props"
 OUTPUT_DIR = ROOT_DIR / "projects" / "demos" / "renders"
 

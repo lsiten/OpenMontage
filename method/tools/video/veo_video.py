@@ -288,39 +288,16 @@ class VeoVideo(BaseTool):
             from io import BytesIO
             import requests
             from tools.google_credentials import get_genai_client, GOOGLE_API_TIMEOUT_MS
-
-            http_options = types.HttpOptions(timeout=GOOGLE_API_TIMEOUT_MS)
-            client = get_genai_client(http_options=http_options)
         except ImportError as e:
             return ToolResult(
                 success=False,
                 error=f"Failed to import required Google libraries: {e}. Run 'uv pip install google-genai pillow requests'",
-            )
-        except Exception as e:
-            return ToolResult(
-                success=False,
-                error=f"Failed to initialize Google GenAI Client: {e}",
-            )
-
-        is_vertex = getattr(client, "vertexai", None)
-        if is_vertex is None or not isinstance(is_vertex, bool):
-            is_vertex = getattr(client, "_api_client", None) and getattr(
-                client._api_client, "vertexai", False
             )
 
         prompt = inputs["prompt"]
         operation = inputs.get("operation", "text_to_video")
         model_variant = inputs.get("model_variant", "veo3.1")
         auto_fix = inputs.get("auto_fix", True)
-
-        # Map to the official preview model unless a custom model name is provided
-        if model_variant in {"veo3", "veo3/fast", "veo3.1", "veo3.1/fast"}:
-            if is_vertex:
-                model_name = "veo-3.1-generate-001"
-            else:
-                model_name = "veo-3.1-generate-preview"
-        else:
-            model_name = model_variant
 
         duration_text = str(inputs.get("duration", "8s")).lower().replace("s", "")
         try:
@@ -455,6 +432,30 @@ class VeoVideo(BaseTool):
                 success=False,
                 error=f"Failed to load inputs for operation {operation}: {e}",
             )
+
+        try:
+            http_options = types.HttpOptions(timeout=GOOGLE_API_TIMEOUT_MS)
+            client = get_genai_client(http_options=http_options)
+        except Exception as e:
+            return ToolResult(
+                success=False,
+                error=f"Failed to initialize Google GenAI Client: {e}",
+            )
+
+        is_vertex = getattr(client, "vertexai", None)
+        if is_vertex is None or not isinstance(is_vertex, bool):
+            is_vertex = getattr(client, "_api_client", None) and getattr(
+                client._api_client, "vertexai", False
+            )
+
+        # Map to the official preview model unless a custom model name is provided
+        if model_variant in {"veo3", "veo3/fast", "veo3.1", "veo3.1/fast"}:
+            if is_vertex:
+                model_name = "veo-3.1-generate-001"
+            else:
+                model_name = "veo-3.1-generate-preview"
+        else:
+            model_name = model_variant
 
         try:
             # Submit generation request

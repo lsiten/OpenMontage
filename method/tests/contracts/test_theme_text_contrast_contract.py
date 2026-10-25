@@ -18,9 +18,10 @@ import pytest
 
 from styles.playbook_loader import list_playbooks, validate_contrast
 from tools.video.video_compose import VideoCompose
+from lib.paths import remotion_composer_dir
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-COMPOSER = REPO_ROOT / "remotion-composer" / "src"
+COMPOSER = remotion_composer_dir() / "src"
 
 # WCAG 2.1 AA for normal-size text.
 MIN_CONTRAST = 4.5
