@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PM — 项目详情</title>
+  <link rel="stylesheet" href="/ui/pm.css" />
+</head>
+<body>
+  <header>
+    <h1 id="title">PM · 项目详情</h1>
+    <nav class="nav">
+      <a href="/">项目列表</a>
+      <a href="/chat">对话入口</a>
+    </nav>
+  </header>
+  <main id="main"><div class="card muted">加载中…</div></main>
+  <script src="/ui/pm.js"></script>
+  <script>
+    const id = new URLSearchParams(location.search).get("id") || (location.pathname.split("/").pop() || "");
+    function boardSummary(b) {
+      if (!b || b.error) return `<p class="muted">无实时看板状态（运行时目录尚未写入；由 agent 驱动的管线执行时生成）。</p>`;
+      if (!b.has_pipeline_state) return `<p class="muted">尚无 pipeline 状态（PM 记录已创建，管线尚未开始执行）。</p>`;
+      const stages = (b.stages || []).map(s => `${PM.esc(s.name)}<span class="badge">${PM.esc(s.status)}</span>`).join(" ");
+      return `<div class="section-title">实时看板（只读派生，来自 backlot）</div><div>${stages || "—"}<br><span class="muted">成本: ${b.cost ? (b.cost.total_spent_usd ?? "—") : "—"} USD；活动: ${b.live ? "live" : "idle"}</span></div>`;
+    }
+    async function load() {
+      const d = await PM.api("/api/project/" + encodeURIComponent(id) + "/detail");
+      const p = d.pm;
+      document.getElementById("title").textContent = "PM · " + p.title;
+      const cost = [
+        ["预算 (USD)", p.cost_budget_usd],
+        ["已预留 (USD)", p.cost_reserved_usd],
+        ["已花费 (USD)", p.cost_spent_usd],
+        ["成本模式", p.cost_mode],
+        ["需审批", p.requires_approval ? "是" : "否"],
+        ["已审批", p.approved ? "是" : "否"],
+      ].map(([k, v]) => `<div class="k">${PM.esc(k)}</div><div>${PM.esc(v)}</div>`).join("");
+      const approvals = (d.approvals || []).length
+        ? d.approvals.map(a => `<tr><td>${PM.esc(a.kind)}</td><td>${PM.esc(a.detail || "")}</td><td>${PM.pill(a.status === "approved" ? "ok" : (a.status === "rejected" ? "paid" : ""), a.status)}</td></tr>`).join("")
+        : `<tr><td colspan="3" class="muted">无审批记录</td></tr>`;
+      document.getElementById("main").innerHTML = `
+        <div class="card">
+          <h2>${PM.esc(p.title)} <span class="badge">${PM.esc(p.status)}</span></h2>
+          <div class="kv">
+            <div class="k">project_id</div><div>${PM.esc(p.project_id)}</div>
+            <div class="k">管线</div><div>${PM.esc(p.pipeline_type)}</div>
+            <div class="k">概念</div><div>${PM.esc(p.concept || "—")}</div>
+            <div class="k">需求</div><div>${PM.esc(p.requirement || "—")}</div>
+            <div class="k">渲染运行时</div><div>${PM.esc(p.render_runtime || "—")}</div>
+            <div class="k">创建人</div><div>${PM.esc(p.created_by || "—")}</div>
+            <div class="k">创建时间</div><div>${PM.esc(p.created_at)}</div>
+            <div class="k">更新时间</div><div>${PM.esc(p.updated_at)}</div>
+          </div>
+        </div>
+        <div class="card">
+          <h2>成本治理</h2>
+          <div class="kv">${cost}</div>
+          <div class="notice">本地/零付费：本记录不默认调用付费 provider；付费能力显示未接入/需授权。</div>
+        </div>
+        ${boardSummary(d.board)}
+        <div class="card">
+          <h2>审批</h2>
+          <table><thead><tr><th>类型</th><th>说明</th><th>状态</th></tr></thead><tbody>${approvals}</tbody></table>
+        </div>`;
+    }
+    load().catch((e) => { document.getElementById("main").innerHTML = `<div class="card paid">${PM.esc(e.message)}</div>`; });
+  </script>
+</body>
+</html>

@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PM — 制作管理（可写层）</title>
+<link rel="stylesheet" href="/ui/index.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="slate">
+    <div class="mark"></div>
+    <div>
+      <span class="wordmark">PM</span>
+      <h1>制作管理</h1>
+    </div>
+    <span class="chip" id="count">—</span>
+    <div class="spacer"></div>
+    <span class="badge" id="zeroPaidBadge" title="零付费/本地/无付费 AI">零付费·本地</span>
+  </header>
+
+  <p class="sub">
+    PM 是与只读 Backlot 看板并存的<b>可写层</b>。对话入口复用 13 条 agentic 管线的“管线选择”逻辑，
+    <b>不新增执行引擎</b>；生成的概念是<b>离线替身</b>，不代表真实 AI 服务已接入或生成质量已验收。
+  </p>
+
+  <main class="grid">
+    <section class="col chat-col">
+      <h2>对话驱动</h2>
+      <textarea id="requirement" rows="3" placeholder="用一句话描述你要做的视频，例如：做一个介绍如何安装 Python 的教程片"></textarea>
+      <div class="row">
+        <input id="pipeline" list="pipelineList" placeholder="管线（可留空自动选择）" autocomplete="off">
+        <datalist id="pipelineList"></datalist>
+      </div>
+      <div class="row btns">
+        <button id="proposeBtn" class="primary">生成提案</button>
+        <button id="createBtn">创建项目</button>
+      </div>
+      <div class="notice" id="notice" role="status"></div>
+      <div class="proposal" id="proposal" hidden></div>
+    </section>
+
+    <section class="col list-col">
+      <h2>项目 <span class="dim" id="listCount"></span></h2>
+      <div class="cards" id="cards"></div>
+      <p class="hint" id="empty" hidden>暂无项目；在左侧输入需求并“创建项目”，它会显示在这里。</p>
+    </section>
+
+    <section class="col detail-col">
+      <h2>详情 <span class="dim" id="detailId"></span></h2>
+      <div class="tabs">
+        <button class="tab active" data-tab="overview" data-act="tab">概览</button>
+        <button class="tab" data-tab="cost" data-act="tab">成本</button>
+        <button class="tab" data-tab="approvals" data-act="tab">待审批</button>
+      </div>
+      <div class="detail" id="detail"></div>
+    </section>
+  </main>
+
+  <section class="caps">
+    <h2>能力菜单 <span class="dim" id="capSummary"></span></h2>
+    <div class="cap-grid" id="capGrid"></div>
+  </section>
+</div>
+<script src="/ui/index.js"></script>
+</HTMLEOF>
+echo "wrote index.html: $(wc -l < pm/ui/index.html) lines"

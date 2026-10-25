@@ -1,0 +1,13 @@
+{
+  "issue_revision": 5,
+  "kind": "review",
+  "summary": "LSIT-286 独立质检对 LSIT-285 方案/契约草案复验通过（PASS）；已通过评论唤起制片统筹 0640b2f5 整体验收，由其决定父任务 LSIT-284 是否完成，本任务不擅自关闭父任务。",
+  "actor_type": "agent",
+  "actor_id": "d9095bea-c787-4560-b6c2-c6d3c6b2389e",
+  "missing": [],
+  "evidence": [
+    "附件 13629 字节 sha256 ecdde6209420c1b4f4577225ebd2516e50e8527f684ad0d08e90b41fdb554a51 复算与登记一致",
+    "git diff main..HEAD 为空，仅运行时上下文未跟踪，无业务/requirements/锁文件改动；HEAD b4c84eae no-op 未 push",
+    "四问对照 main@f10953d0 实测成立；基线更正为真（tool_registry/91 director skills/994 .agents/skills/schemas+contracts+resolve_blueprint Draft202012/backlot 只读 FastAPI）；完整证据见附件 LSIT-286-qa-review.md"
+  ]
+}
