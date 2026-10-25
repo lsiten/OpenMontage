@@ -15,11 +15,13 @@ named as "未接入/需授权".
 from __future__ import annotations
 
 from pathlib import Path
+from contextlib import asynccontextmanager
+import os
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.responses import FileResponse
-from anyio import to_thread
+from anyio import create_task_group, to_thread
 from fastapi.staticfiles import StaticFiles
 
 from pm import DEFAULT_PORT
@@ -29,6 +31,11 @@ from pm import schema
 from pm import state as state_mod
 from pm.store import get_db, DeletedProject
 from pm.production import ProductionInput, ProductionRequest, ProductionView, request_production, observe_production
+from pm.production import production_queue
+from pm.production_queue import RequestConflict
+from pm.production_types import ConsumerState, QueueRecord, RequestControl
+from pm.agent_transport import AgentConfig, TransportError
+from pm.consumer import Consumer
 
 UI_DIR = Path(__file__).resolve().parent / "ui"
 
@@ -37,8 +44,54 @@ def _db():
     return get_db()
 
 
-def create_app() -> FastAPI:
-    app = FastAPI(title="PM (production manager)", docs_url=None, redoc_url=None)
+def create_app(agent_config: AgentConfig | None = None) -> FastAPI:
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        config = agent_config
+        config_error = None
+        path = os.environ.get('PM_AGENT_CONFIG')
+        if config is None and path:
+            try:
+                config = AgentConfig.model_validate_json(Path(path).read_text(encoding='utf-8'))
+            except (OSError, ValueError, TransportError):
+                config_error = '本地 agent 配置无效；请由管理员核实入口、费用与授权证据'
+        queue = production_queue()
+        consumer = Consumer(queue, config, lambda pid: _db().get_project(pid) is not None)
+        app.state.consumer = consumer
+        # Import legacy handoffs only at startup, preserving their request IDs.
+        for project in _db().list_projects():
+            request_file = queue.project_dir(project.project_id) / 'production_request.json'
+            if request_file.is_file():
+                try:
+                    task = ProductionRequest.model_validate_json(request_file.read_text(encoding='utf-8'))
+                    if task.project_id != project.project_id:
+                        raise RequestConflict('历史请求 project_id 不匹配')
+                    queue.register(task, task.request_id)
+                except (OSError, ValueError, RequestConflict):
+                    # Observer exposes the invalid file as a failure, never a runnable request.
+                    continue
+        if config_error:
+            consumer.state = ConsumerState(error=config_error)
+        async with create_task_group() as group:
+            group.start_soon(to_thread.run_sync, consumer.run)
+            try:
+                yield
+            finally:
+                consumer.stop.set()
+
+    app = FastAPI(title="PM (production manager)", docs_url=None, redoc_url=None, lifespan=lifespan)
+
+    @app.exception_handler(RequestConflict)
+    async def request_conflict(request: Request, exc: RequestConflict) -> JSONResponse:
+        return JSONResponse(status_code=409, content={'detail': str(exc)})
+
+    def consumer_state(project_id: str) -> ConsumerState:
+        consumer = getattr(app.state, 'consumer', None)
+        if consumer is None:
+            return ConsumerState()
+        return consumer.state.model_copy(update={
+            'connected': consumer.state.connected and consumer.active_project_id == project_id,
+        })
 
     def require_project(project_id: str) -> schema.PmProject:
         project = _db().get_project(project_id)
@@ -60,12 +113,28 @@ def create_app() -> FastAPI:
     @app.post('/api/projects/{project_id}/run', status_code=202)
     def production_request(project_id: str, req: ProductionInput) -> ProductionRequest:
         project = require_project(project_id)
+        consumer = getattr(app.state, 'consumer', None)
+        modes = consumer.config.allowed_modes if consumer and consumer.config else ('local_technical_test',)
+        if req.mode not in modes:
+            raise HTTPException(status_code=403, detail='此制作模式尚未获得本地管理员授权')
         return request_production(project_id, project.pipeline_type, req)
+
+    @app.post('/api/projects/{project_id}/run/cancel')
+    def cancel_production(project_id: str, req: RequestControl) -> QueueRecord:
+        require_project(project_id)
+        return production_queue().control(project_id, (req, False))
+
+    @app.post('/api/projects/{project_id}/run/retry')
+    def retry_production(project_id: str, req: RequestControl) -> QueueRecord:
+        require_project(project_id)
+        if observe_production(project_id).media_url:
+            raise RequestConflict('成片已验证完成；新制作请创建新项目')
+        return production_queue().control(project_id, (req, True))
 
     @app.get('/api/projects/{project_id}/production')
     def production_state(project_id: str) -> ProductionView:
         require_project(project_id)
-        return observe_production(project_id)
+        return observe_production(project_id, consumer_state(project_id))
 
     @app.get('/api/projects/{project_id}/media/final.mp4')
     def final_media(project_id: str) -> FileResponse:

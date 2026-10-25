@@ -63,6 +63,9 @@ async function loadProjects() {
 
 function selectProject(pid) {
   current = pid;
+  $('productionPanel').dataset.requestId = '';
+  $('cancelRunBtn').hidden = true;
+  $('retryRunBtn').hidden = true;
   history.replaceState(null, '', `?project=${encodeURIComponent(pid)}`);
   $("detailId").textContent = pid;
   loadDetail();
@@ -160,9 +163,19 @@ async function loadProduction() {
       api(`/api/projects/${encodeURIComponent(pid)}`),
     ]);
     if (current !== pid) return;
-    const labels = {not_requested:'尚未提交', awaiting_agent:'等待 agent 接手（执行通道未接入）',
+    const labels = {not_requested:'尚未提交', awaiting_agent:'等待本地 agent 接手', cancelled:'已取消制作',
       in_progress:'实际制作中', completed:'已渲染（待独立质检）', failed:'制作失败', awaiting_human:'等待阶段审批'};
     $('productionStatus').textContent = labels[p.status] || p.status;
+    const consumer = p.consumer || {};
+    $('consumerStatus').textContent = consumer.test_double
+      ? '本地测试替身：仅验证消费契约，未接入真实 AI。'
+      : consumer.connected ? '本地 agent 正在处理本项目。'
+      : consumer.ready ? '本地消费端已通过就绪检查；当前无活动连接。'
+      : consumer.error || '本地消费端未就绪，请由管理员配置已授权入口。';
+    $('productionPanel').dataset.requestId = p.request?.request_id || '';
+    $('cancelRunBtn').hidden = !p.request || !['awaiting_agent','in_progress','awaiting_human','failed'].includes(p.status);
+    $('retryRunBtn').hidden = !p.request || !['failed','cancelled','awaiting_human'].includes(p.status);
+    $('retryRunBtn').textContent = p.status === 'awaiting_human' ? '检查审批并恢复' : '重试制作';
     $('productionError').textContent = p.error || '';
     $('productionLog').textContent = p.log || '暂无制作日志。';
     $('artifactNames').textContent = `实际产物：${p.artifact_names.join('、') || '无'}`;
@@ -183,6 +196,22 @@ async function loadProduction() {
   } catch (e) {
     if (!(e instanceof Error)) throw e;
     if (current === pid) $('productionError').textContent = `制作记录加载失败：${e.message}`;
+  }
+}
+
+async function controlProduction(action) {
+  const pid = current;
+  const requestId = $('productionPanel').dataset.requestId;
+  if (!pid || !requestId) return;
+  try {
+    await api(`/api/projects/${encodeURIComponent(pid)}/run/${action}`, {
+      method:'POST', headers:{'content-type':'application/json'},
+      body:JSON.stringify({request_id:requestId}),
+    });
+    if (current === pid) await loadProduction();
+  } catch (e) {
+    if (!(e instanceof Error)) throw e;
+    if (current === pid) $('productionError').textContent = `操作失败：${e.message}`;
   }
 }
 
@@ -372,6 +401,8 @@ function init() {
     if ($('deleteDialog').returnValue === 'confirm') deleteCurrent();
   });
   $('runBtn').addEventListener('click', submitProduction);
+  $('cancelRunBtn').addEventListener('click', () => controlProduction('cancel'));
+  $('retryRunBtn').addEventListener('click', () => controlProduction('retry'));
   $('refreshBtn').addEventListener('click', loadProduction);
   setInterval(() => { if (!document.hidden) loadProduction(); }, 2500);
   document.querySelectorAll(".tab").forEach((t) => {

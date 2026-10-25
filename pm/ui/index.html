@@ -19,7 +19,7 @@
     <span class="badge" id="zeroPaidBadge" title="零付费/本地/无付费 AI">零付费·本地</span>
   </header>
 
-  <p class="sub">零付费本地工作台。提案为规则生成的离线替身；真实 AI 服务和自动 agent 执行通道未接入。制作记录来自项目实际文件。</p>
+  <p class="sub">零付费本地工作台。提案为规则生成的离线替身。制作由已授权的本地 agent 接手；未配置时仅保存请求，连接与产物以项目实际记录为准。</p>
 
   <main class="grid">
     <section class="col chat-col">
@@ -70,9 +70,10 @@
       <section id="productionPanel" hidden>
         <h3>制作任务</h3>
         <label for="productionMode">制作模式</label>
-        <select id="productionMode"><option value="local_technical_test">本地技术测试：15秒 / 720p / 24fps / 三镜头</option><option value="agent_production">自定义需求制作（agent 未接入）</option></select>
-        <p class="hint">技术测试使用自制或离线替身素材，不代表真实 AI 已接入。提交只保存任务，需由 agent 按既有管线接手。</p>
-        <div class="row btns"><button id="runBtn" type="button">提交制作任务</button><button id="refreshBtn" type="button">刷新记录</button></div>
+        <select id="productionMode"><option value="local_technical_test">本地技术测试：15秒 / 720p / 24fps / 三镜头</option><option value="agent_production">自定义需求制作（需本地管理员授权）</option></select>
+        <p class="hint">技术测试使用自制或明确许可素材。可用消费端按既有管线接手，阶段审批仍须保留；测试替身不代表真实 AI 已接入。</p>
+        <div class="row btns"><button id="runBtn" type="button">提交制作任务</button><button id="refreshBtn" type="button">刷新记录</button><button id="cancelRunBtn" type="button" hidden>取消制作</button><button id="retryRunBtn" type="button" hidden>重试制作</button></div>
+        <p id="consumerStatus" class="hint" role="status"></p>
         <p id="productionStatus" role="status"></p>
         <div id="stages"></div><div id="scenes"></div>
         <p id="productionError" role="alert"></p>
