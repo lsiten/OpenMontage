@@ -19,7 +19,8 @@ import pytest
 
 # Resolve the module-level singletons to a throwaway location at import time
 # (runs before any test module imports pm / backlot).
-_TMP = pathlib.Path(tempfile.mkdtemp(prefix="pm_test_"))
+_TMP_OWNER = tempfile.TemporaryDirectory(prefix="pm_test_")
+_TMP = pathlib.Path(_TMP_OWNER.name)
 os.environ["OPENMONTAGE_PROJECTS_DIR"] = str(_TMP / "projects")
 os.environ["PM_DB_PATH"] = str(_TMP / "pm.db")
 

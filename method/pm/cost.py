@@ -186,7 +186,7 @@ def estimate_cost(
         local_capabilities=report["local"],
         paid_capabilities=report["paid"],
         notes=[
-            "本地/离线能力优先（Remotion/HyperFrames/Piper/whisper/ffmpeg/本地diffusion/ComfyUI）。",
+            "视频制作统一使用 OpenReel；工具分类不表示制作路由或实际接入，Remotion 不是必需依赖。",
             "付费 provider 仅分类、不接入、不调用；显示为“未接入/需授权”。",
             "任何付费调用仍需 proposal 审批 + cost_tracker.reserve + 用户确认。",
         ],

@@ -58,8 +58,13 @@ class AgentMessage(Record):
     mode: Mode = 'local_technical_test'
     projects_dir: str = ''
     request_file: str = ''
+    render_runtime: Literal['openreel'] = 'openreel'
     instructions: str = (
         'Read AGENT_GUIDE.md, the request, manifest and stage director skills; discover the registry. '
+        'This project requires OpenReel for editing, composition, rendering and export. '
+        'This overrides legacy runtime suggestions in manifests/skills; never fall back to Remotion '
+        'or require its installation. If the OpenReel execution bridge is unavailable, report failure '
+        'with the missing prerequisite rather than claiming production success. '
         'Use lib.checkpoint.get_next_stage to resume. Only the agent makes creative decisions. '
         'Preserve manifest approval gates; never synthesize human_approved. No paid calls, credentials, '
         'model downloads, publishing or sensitive media. Write canonical artifacts/checkpoints in this '

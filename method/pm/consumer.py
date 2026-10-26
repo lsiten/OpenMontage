@@ -116,6 +116,7 @@ class Consumer:
                 protocol=1, operation='execute', project_id=request.project_id, request_id=request.request_id,
                 attempt_token=record.token, mode=request.mode, projects_dir=str(self.queue.root),
                 request_file=str(pdir / 'production_request.json'),
+                render_runtime=request.render_runtime,
             )), ProcessHooks(cancelled, receive))
             self.state = self.state.model_copy(update={'connected': False})
             match reply.status:

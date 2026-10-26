@@ -1,5 +1,16 @@
 # 本地消费适配
 
+本包现位于 `method/pm/`，与 `method/backlot/` 平级；从 `method/` 运行
+`python -m pm`，或在仓库根设置 `PYTHONPATH=method`。管线 manifest、director skills
+和指南路径均相对 `method/`；消费子进程 cwd 也是 `method/`。现行测试为
+`method/tests/pm/`，不使用归档的 LSIT-287 旧测试。
+
+视频制作统一使用 OpenReel。持久制作请求与消费消息均携带
+`render_runtime=openreel`，优先于旧 manifest/director 的运行时建议；禁止隐式回退
+Remotion，也不要求配置 Remotion。工具 registry 是能力清单，不是当前路由。
+真实 CLI 包装与 OpenReel 执行桥尚未接通，AI 模型未接入；默认保持未配置／
+`awaiting_agent`。此路由字段不是渲染成功或整片验收证据。
+
 PM 只管理请求、进程、租约和证据。真实 agent 仍须阅读 AGENT_GUIDE、管线 manifest、director skills、工具 registry 和 checkpoint 协议，执行创意决策并保留审批。本适配不生成脚本、分镜、素材或审批决定。
 
 ## 默认行为与生命周期

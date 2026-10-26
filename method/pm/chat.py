@@ -60,7 +60,7 @@ def generate_concept(requirement: str, pipeline_type: str, selection: schema.Pip
         f"标题: {_title_from(requirement)}\n"
         f"需求: {hook}\n"
         f"管线: {pipeline_type}（置信度 {selection.confidence:.0%}；备选 {selection.alternatives or '—'}）\n"
-        f"视觉: 本地/离线运行时优先；具体可用性以能力菜单为准，本地分类不代表已安装或已接入。\n"
+        f"视觉: 视频编辑、合成、渲染和导出统一使用 OpenReel；能力菜单的本地分类不代表已安装或已接入。\n"
         f"说明: 这是规则生成的离线替身概念，用于立项与审批；真实生成质量未接入/未验收，"
         f"付费 provider 未接入。"
     )
@@ -133,7 +133,9 @@ def build_proposal(
     )
     concept = generate_concept(requirement, selection.pipeline_type, selection)
     items = approval_items(cost, requirement)
-    note = "本地/离线能力优先；付费 provider 仅分类不接入。本提案由 pm/chat 规则生成，未调用任何真实/付费 AI。"
+    note = ("制作统一使用 OpenReel，真实 CLI 包装与 AI 模型尚未接通；默认未配置时等待 agent。"
+            "能力菜单仅报告工具，不代表当前制作路由。付费 provider 仅分类不接入。"
+            "本提案由 pm/chat 规则生成，未调用任何真实/付费 AI。")
 
     return schema.ProposalPacket(
         requirement=requirement,

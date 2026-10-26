@@ -39,6 +39,7 @@ class ProductionRequest(Record):
     pipeline_type: str
     manifest: str
     director_skills: list[str]
+    render_runtime: Literal['openreel'] = 'openreel'
     status: Literal['awaiting_agent'] = 'awaiting_agent'
     agent_connected: Literal[False] = False
     created_at: str
