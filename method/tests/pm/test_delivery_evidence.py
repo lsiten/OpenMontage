@@ -107,3 +107,42 @@ def test_request_file_project_mismatch_is_visible(client, projects_dir):
     assert view['status'] == 'failed'
     assert '不一致' in view['error']
     assert view['media_url'] is None
+
+
+@pytest.mark.parametrize('change', ['untouched', 'media', 'request_id', 'project_id',
+                                    'pipeline_type', 'missing_review'])
+def test_queued_delivery_http_guard_tracks_verified_evidence(delivery, client, change):
+    # Given an actually decoded local fixture bound to a completed queue record.
+    pid, request, pdir = delivery
+    queue = production_queue()
+    proof = verify_delivery(request, pdir)
+    with queue.lease(pid) as fd:
+        assert fd is not None
+        record = queue.claim(pid)
+        queue.finish(record.model_copy(update={'status': 'completed', **proof.model_dump()}))
+    if change == 'media':
+        (pdir / 'renders/final.mp4').write_bytes(b'TEST DOUBLE NOT A REAL VIDEO!!')
+    if change == 'missing_review':
+        (pdir / 'artifacts/final_review.json').unlink()
+    if change in ('request_id', 'project_id', 'pipeline_type'):
+        path = pdir / 'checkpoint_compose.json'
+        checkpoint = json.loads(path.read_text())
+        if change == 'request_id':
+            checkpoint['metadata']['request_id'] = 'another-request'
+        else:
+            checkpoint[change] = 'another-project' if change == 'project_id' else 'cinematic'
+        path.write_text(json.dumps(checkpoint))
+    # When the public observer and media route inspect the same completed record.
+    view = client.get(f'/api/projects/{pid}/production').json()
+    download = client.get(f'/api/projects/{pid}/media/final.mp4')
+    # Then intact queued media remains downloadable; changed evidence fails closed.
+    if change == 'untouched':
+        assert view['status'] == 'completed'
+        assert view['media_url'] == f'/api/projects/{pid}/media/final.mp4'
+        assert download.status_code == 200
+        assert download.content == (pdir / 'renders/final.mp4').read_bytes()
+    else:
+        assert view['status'] == 'failed'
+        assert view['error']
+        assert view['media_url'] is None
+        assert download.status_code == 404

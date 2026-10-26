@@ -49,6 +49,8 @@ def observe_production(project_id: str, consumer: ConsumerState | None = None) -
             if req.project_id != project_id or (record and record.request != req):
                 error = '制作请求与 PM project_id 或持久队列不一致'
                 invalid_request = True
+            elif record is None:
+                error, invalid_request = '制作请求缺少对应的持久队列记录', True
         elif record:
             error, invalid_request = '持久队列对应的制作请求文件缺失', True
     except (OSError, ValueError, EvidenceError) as exc:
@@ -65,11 +67,8 @@ def observe_production(project_id: str, consumer: ConsumerState | None = None) -
                 error = '阶段 checkpoint 的 project_id 或 pipeline 与 PM 项目不一致'
             if checkpoint.status == 'failed' and (record is None or record.status in ('failed', 'completed', 'awaiting_human')):
                 error = checkpoint.error or '制作阶段失败'
-        if record is None and checkpoints:
-            status = 'awaiting_human' if any(c.status == 'awaiting_human' for c in checkpoints) else 'in_progress'
-            compose = next((c for c in checkpoints if c.stage == 'compose'), None)
-            if compose:
-                status = compose.status
+        if record is None and (checkpoints or artifact_names or (pdir / 'renders/final.mp4').exists()):
+            status = 'historical_unverified'
         if status == 'completed':
             video = pdir / 'renders/final.mp4'
             if not video.is_file() or not video.stat().st_size or not video.resolve().is_relative_to(pdir.resolve()):
@@ -85,6 +84,8 @@ def observe_production(project_id: str, consumer: ConsumerState | None = None) -
         error = f'制作状态无法读取：{exc}'
     if invalid_request or (error is not None and status not in ('cancelled', 'awaiting_agent')):
         status = 'failed'
+    if status == 'historical_unverified':
+        error = '历史产物未核验：缺少持久队列验证记录，未开放播放或下载；原文件与阶段记录保留。'
     history = queue.history(project_id)
     lines = [f'{e.timestamp} [{e.request_id}/{e.attempt}] {e.event}: {e.message}' for e in history]
     log_path = pdir / 'production.log'

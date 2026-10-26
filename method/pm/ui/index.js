@@ -163,7 +163,7 @@ async function loadProduction() {
       api(`/api/projects/${encodeURIComponent(pid)}`),
     ]);
     if (current !== pid) return;
-    const labels = {not_requested:'尚未提交', awaiting_agent:'等待本地 agent 接手', cancelled:'已取消制作',
+    const labels = {not_requested:'尚未提交', historical_unverified:'历史产物未核验', awaiting_agent:'等待本地 agent 接手', cancelled:'已取消制作',
       in_progress:'实际制作中', completed:'已渲染（待独立质检）', failed:'制作失败', awaiting_human:'等待阶段审批'};
     $('productionStatus').textContent = labels[p.status] || p.status;
     const consumer = p.consumer || {};
